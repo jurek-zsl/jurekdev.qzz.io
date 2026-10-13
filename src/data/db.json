@@ -58,7 +58,7 @@
     {
       "id": "homebrew-antiquarantine",
       "slug": "homebrew-antiquarantine",
-      "title": "antiQuarantine CLI",
+      "title": "antiQuarantine",
       "tagline": "macOS Extended Attribute Quarantine Stripper & Homebrew Tap",
       "description": "A fast, native CLI utility written in Go for stripping macOS Gatekeeper 'com.apple.quarantine' extended attributes from downloaded binaries and applications.",
       "category": "systems",
@@ -210,7 +210,7 @@
     {
       "id": "vellum",
       "slug": "vellum",
-      "title": "Vellum Runner",
+      "title": "Vellum",
       "tagline": "Go Terminal User Interface for Local Script Management",
       "description": "A Go-based TUI tool for organizing, executing, and monitoring local automation scripts with real-time stdout/stderr capture, process lifecycle hooks, and automated 7-day log rotation.",
       "category": "systems",
@@ -255,7 +255,7 @@
     {
       "id": "jebac-instaling",
       "slug": "jebac-instaling",
-      "title": "Instaling Automation Suite",
+      "title": "jebacInstaling",
       "tagline": "Cross-Browser Extension & Reverse-Engineered Solver",
       "description": "High-efficiency browser extension for Chrome and Firefox (Manifest V3) that inspects DOM session structures and automates vocabulary problem solving on learning platforms.",
       "category": "opensource",
@@ -339,83 +339,6 @@
       ]
     },
     {
-      "id": "wand-enhancer",
-      "slug": "wand-enhancer",
-      "title": "Wand Enhancer",
-      "tagline": "Advanced UX & Interoperability Mod for Desktop Applications",
-      "description": "A desktop mod and UX enhancement extension providing custom shortcuts, interoperability interfaces, and power-user workflows for desktop trainer tools.",
-      "category": "opensource",
-      "techStack": [
-        "JavaScript",
-        "Electron",
-        "Reverse Engineering",
-        "Desktop Mod"
-      ],
-      "githubUrl": "https://github.com/jurek-zsl/Wand-Enhancer",
-      "liveUrl": "https://gitlab.com/kitbyte/wand-enhancer",
-      "stars": 0,
-      "forks": 0,
-      "featured": false,
-      "highlights": [
-        "Injected custom IPC hooks into Electron desktop runtime",
-        "Ergonomic keyboard shortcuts for rapid game state manipulation"
-      ],
-      "architecture": {
-        "overview": "Patches desktop client webviews to add an advanced command layer and keyboard bindings.",
-        "keyDecisions": [
-          "Used safe runtime monkey-patching to preserve official updates compatibility"
-        ]
-      },
-      "metrics": [
-        {
-          "label": "Runtime",
-          "value": "Electron"
-        },
-        {
-          "label": "Mod Target",
-          "value": "Wand / WeMod"
-        }
-      ]
-    },
-    {
-      "id": "add2ott",
-      "slug": "add2ott",
-      "title": "add2ott Extension",
-      "tagline": "YouTube to OpenTogetherTube Room Synchronizer",
-      "description": "Browser extension for instantly sharing and queueing YouTube videos into OpenTogetherTube watch parties, complete with native media controls enabler.",
-      "category": "opensource",
-      "techStack": [
-        "JavaScript",
-        "Browser Extension",
-        "YouTube API",
-        "WebSync"
-      ],
-      "githubUrl": "https://github.com/jurek-zsl/add2ott",
-      "stars": 0,
-      "forks": 0,
-      "featured": false,
-      "highlights": [
-        "One-click action button on YouTube watch pages sending payloads to room websockets",
-        "Restores native picture-in-picture and keyboard media shortcuts"
-      ],
-      "architecture": {
-        "overview": "Extracts active video IDs from YouTube history states and communicates directly with OpenTogetherTube REST/WebSocket APIs.",
-        "keyDecisions": [
-          "Lightweight manifest with minimal permissions strictly scoped to relevant hosts"
-        ]
-      },
-      "metrics": [
-        {
-          "label": "Type",
-          "value": "Web Extension"
-        },
-        {
-          "label": "Target",
-          "value": "OpenTogetherTube"
-        }
-      ]
-    },
-    {
       "id": "createnewfile-macos",
       "slug": "createnewfile-macos",
       "title": "CreateNewFile macOS",
@@ -452,45 +375,152 @@
           "value": "macOS Finder"
         }
       ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Go (CLI & TUI)",
+      "category": "Systems & OS Tooling",
+      "proficiency": "Expert",
+      "description": "Interactive terminal user interfaces, bubbletea/tview, concurrent file chunk streaming, process managers",
+      "tag": "ohio-cli, vellum"
     },
     {
-      "id": "simple-online-chat",
-      "slug": "simple-online-chat",
-      "title": "Simple Online Chat",
-      "tagline": "Real-Time WebSocket Web Chat Remake",
-      "description": "A lightweight, clean real-time chat application with an accessible web interface, instant broadcast messaging, and decoupled client-server architecture.",
-      "category": "fullstack",
-      "techStack": [
-        "JavaScript",
-        "WebSockets",
-        "Node.js",
-        "HTML5",
-        "CSS"
-      ],
-      "githubUrl": "https://github.com/jurek-zsl/simpleOnlineChat",
-      "stars": 0,
-      "forks": 0,
-      "featured": false,
-      "highlights": [
-        "Real-time event broadcasting over persistent WebSocket connections",
-        "Zero frontend frameworks: pure lightweight responsive client"
-      ],
-      "architecture": {
-        "overview": "Node.js server handling connection pooling, message deserialization, and multi-client broadcast dispatch.",
-        "keyDecisions": [
-          "Lightweight footprint for quick deployment on local or hosted web servers"
-        ]
-      },
-      "metrics": [
-        {
-          "label": "Protocol",
-          "value": "WebSockets"
-        },
-        {
-          "label": "Architecture",
-          "value": "Real-Time"
-        }
-      ]
+      "name": "macOS Darwin & xattr",
+      "category": "Systems & OS Tooling",
+      "proficiency": "Expert",
+      "description": "macOS extended attributes, Gatekeeper quarantine removal, Darwin sys/xattr syscalls",
+      "tag": "homebrew-antiQuarantine"
+    },
+    {
+      "name": "Homebrew Packaging",
+      "category": "Systems & OS Tooling",
+      "proficiency": "Advanced",
+      "description": "Custom Homebrew taps, Ruby formula authoring, automated binary release pipelines",
+      "tag": "jurek-zsl/tap"
+    },
+    {
+      "name": "AppleScript & Automator",
+      "category": "Systems & OS Tooling",
+      "proficiency": "Advanced",
+      "description": "Native macOS Finder context menu actions, workflow automation, POSIX path resolving",
+      "tag": "CreateNewFile-macOS"
+    },
+    {
+      "name": "Linux & Bash / Zsh",
+      "category": "Systems & OS Tooling",
+      "proficiency": "Advanced",
+      "description": "Debian & Arch Linux administration, subprocess group isolation (PGID), cron & log rotation daemons",
+      "tag": "vellum"
+    },
+    {
+      "name": "Windows DWM & Mica",
+      "category": "Systems & OS Tooling",
+      "proficiency": "Advanced",
+      "description": "Desktop Window Manager composition, Acrylic/Mica hardware blur, MicaForEveryone hook integration",
+      "tag": "MumbleMica"
+    },
+    {
+      "name": "Multiplayer Game Engines",
+      "category": "Game Dev & Real-Time",
+      "proficiency": "Advanced",
+      "description": "60 FPS authoritative server loop, collision detection, classes and projectile combat",
+      "tag": "openclock"
+    },
+    {
+      "name": "WebSockets & Netcode",
+      "category": "Game Dev & Real-Time",
+      "proficiency": "Expert",
+      "description": "Delta state compression, client-side interpolation, zero-latency local area network sync",
+      "tag": "openclock, simpleOnlineChat"
+    },
+    {
+      "name": "HTML5 Canvas 2D",
+      "category": "Game Dev & Real-Time",
+      "proficiency": "Advanced",
+      "description": "Custom retro/cyberpunk 2D renderers, camera tracking, dynamic sprite animations",
+      "tag": "openclock"
+    },
+    {
+      "name": "Zero-Config LAN Hosting",
+      "category": "Game Dev & Real-Time",
+      "proficiency": "Expert",
+      "description": "Self-contained portable execution (.bat/.sh scripts), offline school network playability",
+      "tag": "openclock"
+    },
+    {
+      "name": "Manifest V3 Extensions",
+      "category": "Browser Extensions & Automation",
+      "proficiency": "Expert",
+      "description": "Chrome and Firefox extension development, background service workers, content script isolation",
+      "tag": "jebacInstaling, add2ott"
+    },
+    {
+      "name": "DOM Reverse Engineering",
+      "category": "Browser Extensions & Automation",
+      "proficiency": "Expert",
+      "description": "Dynamic DOM mutation analysis, automated problem solvers, anti-detection human typing cadence",
+      "tag": "jebacInstaling"
+    },
+    {
+      "name": "API & Webhook Client Sync",
+      "category": "Browser Extensions & Automation",
+      "proficiency": "Advanced",
+      "description": "Reverse-engineered educational platform APIs, offline lexical databases, cross-browser injection",
+      "tag": "instaling.jurekzsl.lol"
+    },
+    {
+      "name": "YouTube & Video Sync",
+      "category": "Browser Extensions & Automation",
+      "proficiency": "Advanced",
+      "description": "DOM media element overrides, OpenTogetherTube room synchronizer, native player controls enabler",
+      "tag": "add2ott"
+    },
+    {
+      "name": "Qt Style Sheets (QSS)",
+      "category": "Desktop Modding & Theming",
+      "proficiency": "Expert",
+      "description": "Deep Qt client styling, high-contrast typography, high-DPI Windows 11 window styling",
+      "tag": "MumbleMica"
+    },
+    {
+      "name": "Electron App Modding",
+      "category": "Desktop Modding & Theming",
+      "proficiency": "Advanced",
+      "description": "Desktop runtime webview injection, custom IPC messaging layers, hotkey accelerators",
+      "tag": "Wand-Enhancer"
+    },
+    {
+      "name": "Jellyfin Media Theming",
+      "category": "Desktop Modding & Theming",
+      "proficiency": "Expert",
+      "description": "Catppuccin color palette adaptation, TUI-inspired media browser styling, custom CSS architectures",
+      "tag": "cattyfin"
+    },
+    {
+      "name": "TypeScript & JavaScript",
+      "category": "Fullstack & Cloud",
+      "proficiency": "Expert",
+      "description": "Modern ESNext, Node.js runtimes, strict typing, functional utilities and reactive state"
+    },
+    {
+      "name": "Next.js 15 & React 19",
+      "category": "Fullstack & Cloud",
+      "proficiency": "Expert",
+      "description": "App Router, Server Components, client state machines, Tailwind CSS v4, dynamic SEO"
+    },
+    {
+      "name": "Cloud Storage Architectures",
+      "category": "Fullstack & Cloud",
+      "proficiency": "Advanced",
+      "description": "Chunked streaming file pipelines, token-based authentication, OhioFiles Cloud ecosystem",
+      "tag": "ohiofiles.cloud"
+    },
+    {
+      "name": "Tailwind CSS & TUI UI",
+      "category": "Fullstack & Cloud",
+      "proficiency": "Expert",
+      "description": "Pure monospace layouts, 3-color minimalist contrast, box-drawing window borders"
     }
   ],
   "profile": {

@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { BlogPost } from "@/types/blog";
 import { Project, ProjectCategory } from "@/types/project";
+import { TechItem } from "@/data/tech-stack";
 import { ProfileData, SiteData } from "@/lib/store";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 
-type AdminTab = "posts" | "projects" | "profile" | "raw_json";
+type AdminTab = "posts" | "projects" | "skills" | "profile" | "raw_json";
 
 const DEFAULT_AUTH_KEY = "jurek2026";
 
@@ -22,6 +23,7 @@ export default function AdminPage() {
   // Core editable datasets
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [skills, setSkills] = useState<TechItem[]>([]);
   const [profile, setProfile] = useState<ProfileData>({
     name: "Lishafai Heorhii (Jurek)",
     handle: "jurek-zsl",
@@ -32,7 +34,7 @@ export default function AdminPage() {
     ecosystem: "ohiofiles.cloud · Homebrew · Jellyfin",
     flagships: "ohio-cli · antiQuarantine · openclock · MumbleMica",
     bio: "High-speed Go CLIs & TUIs, native macOS system tools, real-time LAN multiplayer games, browser extensions, desktop app mods, and pure monospace web apps.",
-    email: "jurek@jurekdev.qzz.io",
+    email: "george@otcsoft.com",
   });
 
   // Post Editor State
@@ -43,6 +45,13 @@ export default function AdminPage() {
   // Project Editor State
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+
+  // Dev Stack / Skills Editor State
+  const [editingSkill, setEditingSkill] = useState<TechItem | null>(null);
+  const [editingSkillIndex, setEditingSkillIndex] = useState<number | null>(null);
+  const [isCreatingSkill, setIsCreatingSkill] = useState(false);
+  const [skillSearch, setSkillSearch] = useState("");
+  const [selectedSkillCategory, setSelectedSkillCategory] = useState<string>("ALL");
 
   // Raw JSON Editor State
   const [rawJsonText, setRawJsonText] = useState("");
@@ -64,6 +73,7 @@ export default function AdminPage() {
       const data: SiteData = await res.json();
       setPosts(data.posts || []);
       setProjects(data.projects || []);
+      setSkills(data.skills || []);
       if (data.profile) setProfile(data.profile);
       setRawJsonText(JSON.stringify(data, null, 2));
     } catch (err) {
@@ -104,6 +114,7 @@ export default function AdminPage() {
       const payload: SiteData = overrideData || {
         posts,
         projects,
+        skills,
         profile,
       };
 
@@ -147,7 +158,7 @@ export default function AdminPage() {
     setPosts(nextPosts);
     setEditingPost(null);
     setIsCreatingPost(false);
-    handleSaveAll({ posts: nextPosts, projects, profile });
+    handleSaveAll({ posts: nextPosts, projects, skills, profile });
     toast.success(`OK: Post "${updatedPost.title}" saved`);
   };
 
@@ -156,7 +167,7 @@ export default function AdminPage() {
     const nextPosts = posts.filter((p) => p.slug !== slug);
     setPosts(nextPosts);
     if (editingPost?.slug === slug) setEditingPost(null);
-    handleSaveAll({ posts: nextPosts, projects, profile });
+    handleSaveAll({ posts: nextPosts, projects, skills, profile });
     toast.success(`OK: Post "${slug}" deleted`);
   };
 
@@ -180,7 +191,7 @@ export default function AdminPage() {
     setProjects(nextProjects);
     setEditingProject(null);
     setIsCreatingProject(false);
-    handleSaveAll({ posts, projects: nextProjects, profile });
+    handleSaveAll({ posts, projects: nextProjects, skills, profile });
     toast.success(`OK: Project "${updatedProject.title}" saved`);
   };
 
@@ -189,15 +200,114 @@ export default function AdminPage() {
     const nextProjects = projects.filter((p) => p.id !== id);
     setProjects(nextProjects);
     if (editingProject?.id === id) setEditingProject(null);
-    handleSaveAll({ posts, projects: nextProjects, profile });
+    handleSaveAll({ posts, projects: nextProjects, skills, profile });
     toast.success(`OK: Project "${id}" deleted`);
   };
 
   const handleToggleFeatured = (id: string) => {
     const nextProjects = projects.map((p) => (p.id === id ? { ...p, featured: !p.featured } : p));
     setProjects(nextProjects);
-    handleSaveAll({ posts, projects: nextProjects, profile });
+    handleSaveAll({ posts, projects: nextProjects, skills, profile });
   };
+
+  // --- DEV STACK / SKILLS HELPERS ---
+  const handleCreateSkill = () => {
+    setEditingSkill({
+      name: "",
+      category: "Systems & OS Tooling",
+      proficiency: "Expert",
+      description: "",
+      tag: "",
+    });
+    setEditingSkillIndex(null);
+    setIsCreatingSkill(true);
+  };
+
+  const handleEditSkill = (index: number) => {
+    setEditingSkillIndex(index);
+    setEditingSkill({ ...skills[index] });
+    setIsCreatingSkill(false);
+  };
+
+  const handleSaveSkill = () => {
+    if (!editingSkill) return;
+    if (!editingSkill.name.trim()) {
+      toast.error("Skill name cannot be empty");
+      return;
+    }
+    if (!editingSkill.category.trim()) {
+      toast.error("Category cannot be empty");
+      return;
+    }
+    if (!editingSkill.description.trim()) {
+      toast.error("Description cannot be empty");
+      return;
+    }
+
+    let nextSkills: TechItem[];
+    if (isCreatingSkill || editingSkillIndex === null) {
+      nextSkills = [editingSkill, ...skills];
+    } else {
+      nextSkills = [...skills];
+      nextSkills[editingSkillIndex] = editingSkill;
+    }
+
+    setSkills(nextSkills);
+    setEditingSkill(null);
+    setEditingSkillIndex(null);
+    setIsCreatingSkill(false);
+    handleSaveAll({ posts, projects, skills: nextSkills, profile });
+    toast.success(`OK: Skill [${editingSkill.name}] saved`);
+  };
+
+  const handleDeleteSkill = (index: number) => {
+    const target = skills[index];
+    if (!target) return;
+    if (!confirm(`Are you sure you want to delete skill [${target.name}]?`)) return;
+    const nextSkills = skills.filter((_, i) => i !== index);
+    setSkills(nextSkills);
+    handleSaveAll({ posts, projects, skills: nextSkills, profile });
+    toast.info(`DELETED: Skill [${target.name}] removed`);
+  };
+
+  const handleDuplicateSkill = (index: number) => {
+    const target = skills[index];
+    if (!target) return;
+    const duplicated: TechItem = {
+      ...target,
+      name: `${target.name} (Copy)`,
+    };
+    const nextSkills = [...skills];
+    nextSkills.splice(index + 1, 0, duplicated);
+    setSkills(nextSkills);
+    handleSaveAll({ posts, projects, skills: nextSkills, profile });
+    toast.success(`DUPLICATED: Skill [${target.name}] copied`);
+  };
+
+  const handleMoveSkill = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= skills.length) return;
+    const nextSkills = [...skills];
+    const [removed] = nextSkills.splice(index, 1);
+    nextSkills.splice(targetIndex, 0, removed);
+    setSkills(nextSkills);
+    handleSaveAll({ posts, projects, skills: nextSkills, profile });
+    toast.success(`REORDERED: [${removed.name}] moved ${direction}`);
+  };
+
+  const filteredSkillsList = useMemo(() => {
+    return skills.filter((skill) => {
+      const matchesCategory =
+        selectedSkillCategory === "ALL" || skill.category === selectedSkillCategory;
+      const matchesSearch =
+        !skillSearch.trim() ||
+        skill.name.toLowerCase().includes(skillSearch.toLowerCase()) ||
+        skill.description.toLowerCase().includes(skillSearch.toLowerCase()) ||
+        (skill.tag && skill.tag.toLowerCase().includes(skillSearch.toLowerCase())) ||
+        skill.category.toLowerCase().includes(skillSearch.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [skills, selectedSkillCategory, skillSearch]);
 
   // --- RAW JSON IMPORT / EXPORT ---
   const handleApplyRawJson = () => {
@@ -208,6 +318,7 @@ export default function AdminPage() {
       }
       setPosts(parsed.posts);
       setProjects(parsed.projects);
+      if (Array.isArray(parsed.skills)) setSkills(parsed.skills);
       if (parsed.profile) setProfile(parsed.profile);
       handleSaveAll(parsed);
       toast.success("OK: Raw JSON database parsed and synced to disk");
@@ -217,7 +328,7 @@ export default function AdminPage() {
   };
 
   const handleExportJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ posts, projects, profile }, null, 2));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ posts, projects, skills, profile }, null, 2));
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute("download", `jurekdev-backup-${new Date().toISOString().slice(0, 10)}.json`);
@@ -240,10 +351,11 @@ export default function AdminPage() {
         }
         setPosts(parsed.posts);
         setProjects(parsed.projects);
+        if (Array.isArray(parsed.skills)) setSkills(parsed.skills);
         if (parsed.profile) setProfile(parsed.profile);
         setRawJsonText(JSON.stringify(parsed, null, 2));
         handleSaveAll(parsed);
-        toast.success(`OK: Imported ${parsed.posts.length} posts & ${parsed.projects.length} projects`);
+        toast.success(`OK: Imported ${parsed.posts.length} posts, ${parsed.projects.length} projects, ${(parsed.skills || []).length} skills`);
       } catch (err) {
         toast.error(`IMPORT FAILED: ${err instanceof Error ? err.message : "Malformed JSON"}`);
       }
@@ -307,7 +419,7 @@ export default function AdminPage() {
           </span>
           <span className="text-[#38bdf8]">MODE: SYSTEM_ADMIN</span>
           <span>|</span>
-          <span className="text-[#e5e5e5]">POSTS: {posts.length} · PROJ: {projects.length}</span>
+          <span className="text-[#e5e5e5]">POSTS: {posts.length} · PROJ: {projects.length} · SKILLS: {skills.length}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -358,6 +470,17 @@ export default function AdminPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab("skills")}
+          className={`px-3 py-1.5 border cursor-pointer font-bold ${
+            activeTab === "skills"
+              ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000]"
+              : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
+          }`}
+        >
+          [03: DEV_STACK ({skills.length})]
+        </button>
+
+        <button
           onClick={() => setActiveTab("profile")}
           className={`px-3 py-1.5 border cursor-pointer font-bold ${
             activeTab === "profile"
@@ -365,13 +488,13 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [03: SYSTEM_PROFILE]
+          [04: SYSTEM_PROFILE]
         </button>
 
         <button
           onClick={() => {
             setActiveTab("raw_json");
-            setRawJsonText(JSON.stringify({ posts, projects, profile }, null, 2));
+            setRawJsonText(JSON.stringify({ posts, projects, skills, profile }, null, 2));
           }}
           className={`px-3 py-1.5 border cursor-pointer font-bold ${
             activeTab === "raw_json"
@@ -379,7 +502,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [04: RAW_JSON_DATABASE]
+          [05: RAW_JSON_DATABASE]
         </button>
       </div>
 
@@ -940,7 +1063,299 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 3: SYSTEM PROFILE & HERO TELEMETRY */}
+      {/* TAB 3: DEV STACK & MULTIDISCIPLINARY SKILLS */}
+      {/* ======================================================== */}
+      {!loading && activeTab === "skills" && (
+        <div className="space-y-6">
+          {!editingSkill ? (
+            <div className="space-y-4">
+              {/* Header and Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e5e5e5] pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#38bdf8] font-bold">
+                      === DEV_STACK &amp; MULTIDISCIPLINARY SKILLS MATRIX ===
+                    </span>
+                    <span className="text-[10px] text-[#e5e5e5]">[{skills.length} TOTAL SKILLS]</span>
+                  </div>
+                  <div className="text-[11px] text-[#e5e5e5]">
+                    Manage technologies, proficiencies, descriptions, and proof tags rendered in Telemetry Pane 03
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCreateSkill}
+                  className="border border-[#38bdf8] bg-[#000000] px-3 py-1.5 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer font-bold shrink-0"
+                >
+                  [+ NEW DEV SKILL]
+                </button>
+              </div>
+
+              {/* Filters and Search Bar */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  placeholder="Filter skills by keyword (e.g. Go, macOS, WebSockets, Canvas)..."
+                  value={skillSearch}
+                  onChange={(e) => setSkillSearch(e.target.value)}
+                  className="flex-1 border border-[#e5e5e5] bg-[#000000] px-2.5 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                />
+                {skillSearch && (
+                  <button
+                    onClick={() => setSkillSearch("")}
+                    className="border border-[#e5e5e5] px-2 py-1 text-xs hover:border-red-400 hover:text-red-400 cursor-pointer"
+                  >
+                    [CLEAR]
+                  </button>
+                )}
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex flex-wrap gap-1 text-[11px]">
+                <button
+                  onClick={() => setSelectedSkillCategory("ALL")}
+                  className={`px-2 py-0.5 border cursor-pointer ${
+                    selectedSkillCategory === "ALL"
+                      ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                      : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
+                  }`}
+                >
+                  [ALL ({skills.length})]
+                </button>
+                {Array.from(new Set(skills.map((s) => s.category).filter(Boolean))).map((cat) => {
+                  const count = skills.filter((s) => s.category === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedSkillCategory(cat)}
+                      className={`px-2 py-0.5 border cursor-pointer ${
+                        selectedSkillCategory === cat
+                          ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                          : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
+                      }`}
+                    >
+                      [{cat} ({count})]
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Skills List */}
+              <div className="border border-[#e5e5e5] divide-y divide-[#e5e5e5]">
+                {filteredSkillsList.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-[#e5e5e5]">
+                    [NO SKILLS MATCH CURRENT FILTER OR SEARCH]
+                  </div>
+                ) : (
+                  filteredSkillsList.map((skill, displayIdx) => {
+                    const realIndex = skills.findIndex((s) => s === skill);
+                    return (
+                      <div
+                        key={skill.name + displayIdx}
+                        className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-[#38bdf8]/5"
+                      >
+                        <div className="space-y-1 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold text-[10px]">
+                              {skill.category.toUpperCase()}
+                            </span>
+                            <span className="font-bold text-[#e5e5e5] text-sm">{skill.name}</span>
+                            <span className="border border-[#e5e5e5] text-[10px] px-1 text-[#38bdf8]">
+                              [{skill.proficiency}]
+                            </span>
+                            {skill.tag && (
+                              <span className="text-[10px] text-[#e5e5e5]/80">
+                                &gt; {skill.tag}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#e5e5e5] leading-relaxed">
+                            {skill.description}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => handleMoveSkill(realIndex, "up")}
+                            disabled={realIndex === 0}
+                            className="border border-[#e5e5e5] px-1.5 py-0.5 text-[11px] text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            title="Move skill up in list"
+                          >
+                            [↑]
+                          </button>
+                          <button
+                            onClick={() => handleMoveSkill(realIndex, "down")}
+                            disabled={realIndex === skills.length - 1}
+                            className="border border-[#e5e5e5] px-1.5 py-0.5 text-[11px] text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            title="Move skill down in list"
+                          >
+                            [↓]
+                          </button>
+                          <button
+                            onClick={() => handleDuplicateSkill(realIndex)}
+                            className="border border-[#e5e5e5] px-2 py-0.5 text-[11px] text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+                          >
+                            [COPY]
+                          </button>
+                          <button
+                            onClick={() => handleEditSkill(realIndex)}
+                            className="border border-[#38bdf8] px-2 py-0.5 text-[11px] text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
+                          >
+                            [EDIT]
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSkill(realIndex)}
+                            className="border border-red-500 px-2 py-0.5 text-[11px] text-red-400 hover:bg-red-500 hover:text-[#000000] cursor-pointer"
+                          >
+                            [DEL]
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ) : (
+            /* SKILL EDITOR FORM */
+            <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4">
+              <div className="border-b border-[#e5e5e5] pb-2 flex items-center justify-between">
+                <span className="text-xs font-bold text-[#38bdf8]">
+                  {isCreatingSkill ? "=== CREATE NEW DEV SKILL ===" : `=== EDIT SKILL: ${editingSkill.name} ===`}
+                </span>
+                <button
+                  onClick={() => {
+                    setEditingSkill(null);
+                    setEditingSkillIndex(null);
+                    setIsCreatingSkill(false);
+                  }}
+                  className="border border-[#e5e5e5] px-2 py-0.5 text-[11px] text-[#e5e5e5] hover:border-red-400 hover:text-red-400 cursor-pointer"
+                >
+                  [CANCEL]
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[#38bdf8] block mb-1">TECHNOLOGY / SKILL NAME *</label>
+                    <input
+                      type="text"
+                      value={editingSkill.name}
+                      onChange={(e) => setEditingSkill({ ...editingSkill, name: e.target.value })}
+                      className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                      placeholder="e.g. Go (CLI & TUI), Rust, Linux Kernel"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[#38bdf8] block mb-1">PROFICIENCY LEVEL</label>
+                    <div className="flex gap-2">
+                      {(["Expert", "Advanced", "Proficient"] as const).map((lvl) => (
+                        <button
+                          type="button"
+                          key={lvl}
+                          onClick={() => setEditingSkill({ ...editingSkill, proficiency: lvl })}
+                          className={`flex-1 border py-1.5 text-xs cursor-pointer ${
+                            editingSkill.proficiency === lvl
+                              ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                              : "border-[#e5e5e5] text-[#e5e5e5] hover:border-[#38bdf8]"
+                          }`}
+                        >
+                          [{lvl.toUpperCase()}]
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[#38bdf8] block mb-1">CATEGORY DOMAIN *</label>
+                  <input
+                    type="text"
+                    value={editingSkill.category}
+                    onChange={(e) => setEditingSkill({ ...editingSkill, category: e.target.value })}
+                    className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                    placeholder="e.g. Systems & OS Tooling"
+                  />
+                  <div className="mt-1.5 flex flex-wrap gap-1 text-[10px]">
+                    <span className="text-[#e5e5e5]/80 py-0.5">PRESETS:</span>
+                    {[
+                      "Systems & OS Tooling",
+                      "Game Dev & Real-Time",
+                      "Browser Extensions & Automation",
+                      "Desktop Modding & Theming",
+                      "Fullstack & Cloud",
+                      "Reverse Engineering & REA",
+                      "Languages & Runtimes",
+                    ].map((preset) => (
+                      <button
+                        type="button"
+                        key={preset}
+                        onClick={() => setEditingSkill({ ...editingSkill, category: preset })}
+                        className="border border-[#e5e5e5]/40 px-1 py-0.5 text-[#38bdf8] hover:border-[#38bdf8] hover:bg-[#38bdf8]/10 cursor-pointer"
+                      >
+                        [{preset}]
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[#38bdf8] block mb-1">FLAGSHIP REPOS / PROOF TAGS</label>
+                  <input
+                    type="text"
+                    value={editingSkill.tag || ""}
+                    onChange={(e) => setEditingSkill({ ...editingSkill, tag: e.target.value })}
+                    className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                    placeholder="e.g. ohio-cli, vellum, antiQuarantine"
+                  />
+                  <p className="text-[10px] text-[#e5e5e5]/80 mt-0.5">
+                    Comma-separated list of projects or services that demonstrate this skill.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-[#38bdf8] block mb-1">TECHNICAL DESCRIPTION &amp; LOW-LEVEL HIGHLIGHTS *</label>
+                  <textarea
+                    value={editingSkill.description}
+                    onChange={(e) => setEditingSkill({ ...editingSkill, description: e.target.value })}
+                    rows={3}
+                    className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                    placeholder="Describe concrete implementation details, low-level architecture, protocols, or capabilities..."
+                  />
+                </div>
+              </div>
+
+              {/* Form Action Buttons */}
+              <div className="border-t border-[#e5e5e5] pt-3 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSkill(null);
+                    setEditingSkillIndex(null);
+                    setIsCreatingSkill(false);
+                  }}
+                  className="border border-[#e5e5e5] px-3 py-1 text-xs text-[#e5e5e5] hover:border-red-400 hover:text-red-400 cursor-pointer"
+                >
+                  [DISCARD]
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveSkill}
+                  className="border border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold px-4 py-1 text-xs hover:bg-[#000000] hover:text-[#38bdf8] cursor-pointer"
+                >
+                  [SAVE SKILL &amp; PERSIST TO DISK ↵]
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 4: SYSTEM PROFILE & HERO TELEMETRY */}
       {/* ======================================================== */}
       {!loading && activeTab === "profile" && (
         <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4">
@@ -1072,7 +1487,7 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 4: RAW JSON DATABASE & BACKUP/RESTORE */}
+      {/* TAB 5: RAW JSON DATABASE & BACKUP/RESTORE */}
       {/* ======================================================== */}
       {!loading && activeTab === "raw_json" && (
         <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4">
@@ -1116,7 +1531,7 @@ export default function AdminPage() {
 
           <div className="pt-2 border-t border-[#e5e5e5] flex items-center justify-between">
             <button
-              onClick={() => setRawJsonText(JSON.stringify({ posts, projects, profile }, null, 2))}
+              onClick={() => setRawJsonText(JSON.stringify({ posts, projects, skills, profile }, null, 2))}
               className="border border-[#e5e5e5] px-3 py-1 text-xs text-[#e5e5e5] hover:border-red-400 hover:text-red-400"
             >
               [RESET CHANGES]

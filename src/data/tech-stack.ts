@@ -4,12 +4,15 @@ export type TechCategory =
   | "Browser Extensions & Automation"
   | "Desktop Modding & Theming"
   | "Fullstack & Cloud"
-  | "Languages & Runtimes";
+  | "Languages & Runtimes"
+  | (string & {});
+
+export type ProficiencyLevel = "Expert" | "Advanced" | "Proficient" | (string & {});
 
 export interface TechItem {
   name: string;
   category: TechCategory;
-  proficiency: "Expert" | "Advanced" | "Proficient";
+  proficiency: ProficiencyLevel;
   description: string;
   tag?: string;
 }

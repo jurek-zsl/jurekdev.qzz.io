@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { GlassCard } from "../ui/glass-card";
 import { ProjectModal } from "../ui/project-modal";
 import { PROJECTS } from "@/data/projects";
-import { TECH_STACK, TechCategory } from "@/data/tech-stack";
+import { TECH_STACK, TechItem } from "@/data/tech-stack";
 import { GITHUB_STATS, REAL_CONTRIBUTIONS } from "@/data/github-matrix";
 import { Project } from "@/types/project";
 import { ProfileData, DEFAULT_PROFILE } from "@/lib/store";
@@ -12,9 +12,14 @@ import { ProfileData, DEFAULT_PROFILE } from "@/lib/store";
 interface BentoGridProps {
   projects?: Project[];
   profile?: ProfileData;
+  skills?: TechItem[];
 }
 
-export function BentoGrid({ projects = PROJECTS, profile = DEFAULT_PROFILE }: BentoGridProps) {
+export function BentoGrid({
+  projects = PROJECTS,
+  profile = DEFAULT_PROFILE,
+  skills = TECH_STACK,
+}: BentoGridProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedTechDomain, setSelectedTechDomain] = useState<string>("ALL");
   const [pinnedIndex, setPinnedIndex] = useState(0);
@@ -47,29 +52,18 @@ export function BentoGrid({ projects = PROJECTS, profile = DEFAULT_PROFILE }: Be
     }
   };
 
-  const domainTabs = [
-    "ALL",
-    "Systems & OS",
-    "Game Dev",
-    "Extensions",
-    "Desktop Mods",
-    "Cloud & Web",
-  ];
+  // Dynamically compute domain categories from skills
+  const domainTabs = useMemo(() => {
+    const rawCategories = Array.from(new Set(skills.map((t) => t.category).filter(Boolean)));
+    return ["ALL", ...rawCategories];
+  }, [skills]);
 
   const filteredTech = useMemo(() => {
-    if (selectedTechDomain === "ALL") return TECH_STACK.slice(0, 8);
-    if (selectedTechDomain === "Systems & OS")
-      return TECH_STACK.filter((t) => t.category === "Systems & OS Tooling");
-    if (selectedTechDomain === "Game Dev")
-      return TECH_STACK.filter((t) => t.category === "Game Dev & Real-Time");
-    if (selectedTechDomain === "Extensions")
-      return TECH_STACK.filter((t) => t.category === "Browser Extensions & Automation");
-    if (selectedTechDomain === "Desktop Mods")
-      return TECH_STACK.filter((t) => t.category === "Desktop Modding & Theming");
-    if (selectedTechDomain === "Cloud & Web")
-      return TECH_STACK.filter((t) => t.category === "Fullstack & Cloud");
-    return TECH_STACK.slice(0, 8);
-  }, [selectedTechDomain]);
+    if (selectedTechDomain === "ALL" || !domainTabs.includes(selectedTechDomain)) {
+      return skills.slice(0, 8);
+    }
+    return skills.filter((t) => t.category === selectedTechDomain);
+  }, [selectedTechDomain, skills, domainTabs]);
 
   return (
     <section className="py-8 font-mono text-[#e5e5e5]">
@@ -231,7 +225,7 @@ export function BentoGrid({ projects = PROJECTS, profile = DEFAULT_PROFILE }: Be
               <span className="bg-[#e5e5e5] text-[#000000] px-1 font-bold">
                 PANE 03: MULTIDISCIPLINARY_STACK
               </span>
-              <span className="text-[#38bdf8]">[{TECH_STACK.length} SKILLS]</span>
+              <span className="text-[#38bdf8]">[{skills.length} SKILLS]</span>
             </div>
 
             {/* Domain filter pills */}
@@ -275,8 +269,10 @@ export function BentoGrid({ projects = PROJECTS, profile = DEFAULT_PROFILE }: Be
           </div>
 
           <div className="mt-4 pt-3 border-t border-[#e5e5e5] text-xs flex justify-between text-[#e5e5e5]">
-            <span>DOMAINS: Systems · GameDev · Extensions · DesktopMods</span>
-            <span className="text-[#38bdf8]">Versatile</span>
+            <span className="truncate mr-2">
+              DOMAINS: {Array.from(new Set(skills.map((s) => s.category).filter(Boolean))).slice(0, 4).join(" · ") || "Multidisciplinary"}
+            </span>
+            <span className="text-[#38bdf8] shrink-0">Versatile</span>
           </div>
         </GlassCard>
 

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { POSTS } from "@/data/posts";
 import { PROJECTS } from "@/data/projects";
+import { TECH_STACK } from "@/data/tech-stack";
 import { SiteData, DEFAULT_PROFILE } from "./store-types";
 
 const DB_PATH = path.join(process.cwd(), "src/data/db.json");
@@ -15,6 +16,7 @@ export function getSiteData(): SiteData {
       return {
         posts: Array.isArray(parsed.posts) ? parsed.posts : POSTS,
         projects: Array.isArray(parsed.projects) ? parsed.projects : PROJECTS,
+        skills: Array.isArray(parsed.skills) ? parsed.skills : TECH_STACK,
         profile: parsed.profile ? { ...DEFAULT_PROFILE, ...parsed.profile } : DEFAULT_PROFILE,
       };
     }
@@ -25,6 +27,7 @@ export function getSiteData(): SiteData {
   return {
     posts: POSTS,
     projects: PROJECTS,
+    skills: TECH_STACK,
     profile: DEFAULT_PROFILE,
   };
 }

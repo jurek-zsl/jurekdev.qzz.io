@@ -18,6 +18,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!Array.isArray(body.skills)) {
+      body.skills = [];
+    }
+
     const success = saveSiteData(body);
     if (!success) {
       return NextResponse.json(

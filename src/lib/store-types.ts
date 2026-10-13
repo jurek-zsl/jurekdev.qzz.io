@@ -1,5 +1,8 @@
 import { BlogPost } from "@/types/blog";
 import { Project } from "@/types/project";
+import { TechItem } from "@/data/tech-stack";
+
+export type { TechItem };
 
 export interface ProfileData {
   name: string;
@@ -17,6 +20,7 @@ export interface ProfileData {
 export interface SiteData {
   posts: BlogPost[];
   projects: Project[];
+  skills: TechItem[];
   profile: ProfileData;
 }
 
