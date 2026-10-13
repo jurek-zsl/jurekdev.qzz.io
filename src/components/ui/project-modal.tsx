@@ -18,7 +18,7 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[#000000]/80" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-[#e5e5e5] bg-[#000000] p-5 font-mono text-[#e5e5e5]">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-[#e5e5e5] bg-[#000000] p-5 font-mono text-[#e5e5e5] tui-glow-pane">
           {/* Header */}
           <div className="flex items-start justify-between border-b border-[#e5e5e5] pb-3 text-xs">
             <div>

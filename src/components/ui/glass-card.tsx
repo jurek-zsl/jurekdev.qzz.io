@@ -19,7 +19,7 @@ export function GlassCard({
   return (
     <div
       className={cn(
-        "relative border border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] p-5 transition-colors duration-150",
+        "relative border border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] p-5 tui-glow-card",
         "hover:border-[#38bdf8]",
         className
       )}

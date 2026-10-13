@@ -78,7 +78,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[#000000]/80" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 border border-[#e5e5e5] bg-[#000000] p-5 font-mono text-[#e5e5e5]">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 border border-[#e5e5e5] bg-[#000000] p-5 font-mono text-[#e5e5e5] tui-glow-pane">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
             <div className="flex items-center gap-2">

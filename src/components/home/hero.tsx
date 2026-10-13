@@ -114,7 +114,7 @@ export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
       </div>
 
       {/* Neofetch-style system info table */}
-      <div className="mt-6 border border-[#e5e5e5] bg-[#000000] p-4 text-xs space-y-2">
+      <div className="mt-6 border border-[#e5e5e5] bg-[#000000] p-4 text-xs space-y-2 tui-glow-pane">
         <div className="text-[#38bdf8] font-bold pb-2 border-b border-[#e5e5e5] flex justify-between">
           <span>--- SYSTEM DIAGNOSTICS &amp; PROFILE ---</span>
           <span className="text-[#e5e5e5]">LOC: {profile.location}</span>

@@ -43,7 +43,7 @@ export function LatestArticles({ posts = [] }: LatestArticlesProps) {
           </p>
         </div>
       ) : (
-        <div className="border border-[#e5e5e5] bg-[#000000] divide-y divide-[#e5e5e5]">
+        <div className="border border-[#e5e5e5] bg-[#000000] divide-y divide-[#e5e5e5] tui-glow-pane">
           {latestPosts.map((post, idx) => (
             <Link
               key={post.slug}

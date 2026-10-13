@@ -203,6 +203,20 @@ export function AsciiBanner({
       className={`relative overflow-x-auto py-3 select-none font-mono ${className}`}
       aria-label="Jurek ASCII Banner"
     >
+      {/* Subtle ambient back glow behind ASCII art */}
+      <div
+        className="absolute inset-0 pointer-events-none -z-10 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="w-full h-full opacity-20 dark:opacity-20 light:opacity-0 blur-2xl"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 50% at 50% 50%, color-mix(in srgb, var(--accent, #10b981) 70%, transparent) 0%, transparent 75%)",
+          }}
+        />
+      </div>
+
       <span className="sr-only">JUREK</span>
       <pre
         className="text-[var(--accent,#10b981)] text-[10px] sm:text-xs md:text-sm tracking-normal leading-[1.15] select-none m-0 p-0 font-mono"
