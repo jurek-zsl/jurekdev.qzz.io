@@ -1,159 +1,5 @@
 {
-  "posts": [
-    {
-      "slug": "building-distributed-raft-kv-go",
-      "title": "Demystifying Raft: Building a Zero-Allocation Consensus Engine in Go",
-      "description": "A deep dive into building a high-throughput distributed key-value store with the Raft consensus algorithm, exploring log replication, ReadIndex leases, and zero-allocation networking in Go.",
-      "publishedAt": "2025-02-18",
-      "readingTime": "9 min read",
-      "category": "Distributed Systems",
-      "tags": [
-        "Go",
-        "Raft",
-        "Distributed Systems",
-        "Concurrency",
-        "Performance"
-      ],
-      "author": {
-        "name": "Jurek",
-        "handle": "@jurek-zsl"
-      },
-      "toc": [
-        {
-          "id": "introduction",
-          "text": "Introduction & Motivation",
-          "level": 2
-        },
-        {
-          "id": "consensus-overview",
-          "text": "Why Raft over Paxos?",
-          "level": 2
-        },
-        {
-          "id": "log-replication-engine",
-          "text": "The Log Replication Engine",
-          "level": 2
-        },
-        {
-          "id": "read-index-optimization",
-          "text": "Linearizable Reads without Write Quorum",
-          "level": 3
-        },
-        {
-          "id": "memory-optimizations",
-          "text": "Zero-Allocation Buffer Pools in Go",
-          "level": 2
-        },
-        {
-          "id": "benchmarks-learnings",
-          "text": "Benchmarking & Production Lessons",
-          "level": 2
-        }
-      ],
-      "content": "\nConsensus algorithms are notoriously tricky to implement correctly. While Diego Ongaro and John Ousterhout designed Raft explicitly for understandability, translating formal TLA+ specifications into production-grade Go code involves practical trade-offs around memory allocation, network latency, and disk I/O bottlenecks.\n\nIn this article, I share the architectural decisions behind **RaftKV-Go**, a zero-allocation distributed key-value engine built in Go, and how we achieved sub-2ms p99 latency across a 5-node cluster.\n\n---\n\n## Why Raft over Paxos?\n\nMulti-Paxos splits responsibility across proposer, acceptor, and learner roles, which allows for symmetric peer participation but introduces significant complexity when dealing with log compaction and membership reconfiguration.\n\nRaft decomposes consensus into three independent sub-problems:\n1. **Leader Election:** A single leader handles all client writes.\n2. **Log Replication:** The leader appends entries and replicates them across followers.\n3. **Safety:** If any server has applied an entry to its state machine, no other server may apply a different command for the same log index.\n\nBy making the leader the sole authority on log ordering, Raft streamlines the critical path. Followers only need to compare term numbers and log indices.\n\n---\n\n## The Log Replication Engine\n\nThe core replication loop in Go relies on an event-driven actor model. Rather than spawning an unbounded number of goroutines per heartbeat, each peer is represented by a dedicated connection worker holding a bounded channel:\n\n```go\ntype PeerWorker struct {\n    peerID     uint64\n    nextIndex  uint64\n    matchIndex uint64\n    outbox     chan *ReplicationBatch\n    stopCh     chan struct{}\n}\n\nfunc (w *PeerWorker) Run(ctx context.Context, transport Transport) {\n    for {\n        select {\n        case <-ctx.Done():\n            return\n        case batch := <-w.outbox:\n            resp, err := transport.SendAppendEntries(ctx, w.peerID, batch)\n            if err != nil {\n                w.handleTransportError(err)\n                continue\n            }\n            w.processResponse(resp)\n        }\n    }\n}\n```\n\n### Linearizable Reads without Write Quorum\n\nIn naive Raft, satisfying a read request requires appending a no-op log entry through the full consensus pipeline, triggering disk WAL flushes and network rounds. This degrades read throughput significantly.\n\nWe solved this using the **ReadIndex** protocol:\n1. The leader records its current `commitIndex` as `readIndex`.\n2. The leader broadcasts a minimal heartbeat round to verify it has not been deposed by a split-brain leader.\n3. Once a majority acknowledges the heartbeat, the leader waits until its local state machine applies up to `readIndex`, then immediately serves the read from memory.\n\n```go\n// ReadIndex executes a linearizable read without disk write\nfunc (n *RaftNode) LinearizableRead(ctx context.Context, key []byte) ([]byte, error) {\n    readIndex, err := n.acquireReadIndex(ctx)\n    if err != nil {\n        return nil, fmt.Errorf(\"read lease failed: %w\", err)\n    }\n\n    // Wait until local state machine catches up to readIndex\n    if err := n.stateMachine.WaitApplied(ctx, readIndex); err != nil {\n        return nil, err\n    }\n\n    return n.storage.Get(key)\n}\n```\n\n---\n\n## Zero-Allocation Buffer Pools in Go\n\nAt 85,000 QPS, Go's garbage collector can trigger noticeable Stop-The-World (STW) pauses if every RPC payload allocates a new slice on the heap. We implemented synchronized byte buffer pools using `sync.Pool` and segmented ring buffers:\n\n```go\nvar bufferPool = sync.Pool{\n    New: func() any {\n        buf := make([]byte, 0, 64*1024) // 64KB slabs\n        return &buf\n    },\n}\n\nfunc acquireBuffer() *[]byte {\n    return bufferPool.Get().(*[]byte)\n}\n\nfunc releaseBuffer(b *[]byte) {\n    *b = (*b)[:0]\n    bufferPool.Put(b)\n}\n```\n\nBy recycling buffers across the network deserialization boundary, we reduced garbage collector overhead from 14% CPU time down to 1.8%, cutting p99 tail latency in half.\n\n---\n\n## Benchmarking & Production Lessons\n\nWe stress-tested the cluster with a 5-node deployment across three availability zones. Using a concurrent benchmark harness simulating 500 parallel client workers:\n\n| Metric | Naive Raft | RaftKV-Go (ReadIndex + BufferPool) | Improvement |\n| :--- | :--- | :--- | :--- |\n| **Write QPS** | 22,400 | 41,200 | **+84%** |\n| **Read QPS** | 18,100 | 85,600 | **+372%** |\n| **p99 Latency** | 12.4 ms | 1.84 ms | **-85%** |\n| **GC Pause** | 8.2 ms | 0.9 ms | **-89%** |\n\n### Key Takeaways\n1. **Never allocate in the hot path:** Memory recycling beats GC tuning every single time.\n2. **ReadIndex is essential:** Reading without log writes is the single most impactful optimization in Raft.\n3. **Use bounded ring buffers:** Unbounded channels under high traffic lead to catastrophic memory exhaustion.\n"
-    },
-    {
-      "slug": "linux-io-uring-high-throughput-networking",
-      "title": "From epoll to io_uring: Achieving 10M Requests/sec on Modern Linux",
-      "description": "A deep technical exploration comparing Linux epoll and io_uring, examining kernel submission and completion queues, registered buffers, and zero-syscall event loops.",
-      "publishedAt": "2025-01-30",
-      "readingTime": "11 min read",
-      "category": "Linux & Kernel",
-      "tags": [
-        "Linux",
-        "Kernel",
-        "io_uring",
-        "epoll",
-        "C",
-        "Networking"
-      ],
-      "author": {
-        "name": "Jurek",
-        "handle": "@jurek-zsl"
-      },
-      "toc": [
-        {
-          "id": "context",
-          "text": "The Bottleneck of Syscall Context Switches",
-          "level": 2
-        },
-        {
-          "id": "ring-architecture",
-          "text": "The io_uring Ring Architecture",
-          "level": 2
-        },
-        {
-          "id": "submission-completion",
-          "text": "Submission & Completion Queues",
-          "level": 3
-        },
-        {
-          "id": "sqpoll-zero-syscalls",
-          "text": "SQPOLL: True Zero-Syscall I/O",
-          "level": 2
-        },
-        {
-          "id": "registered-buffers",
-          "text": "Fixed Buffers & Page Pinning",
-          "level": 2
-        },
-        {
-          "id": "real-world-metrics",
-          "text": "Comparative Benchmark Results",
-          "level": 2
-        }
-      ],
-      "content": "\nFor over two decades, `epoll` has been the bedrock of high-performance network programming on Linux. Web servers like Nginx, Node.js (via libuv), and Envoy all rely on epoll readiness notifications to multiplex thousands of TCP connections over a handful of worker threads.\n\nHowever, as network hardware evolved from 1GbE to 100GbE and NVMe SSDs reached millions of IOPS, the overhead of standard Linux system calls (`read`, `write`, `epoll_wait`) became the primary bottleneck.\n\nEnter **io_uring**, introduced by Jens Axboe in Linux 5.1.\n\n---\n\n## The Bottleneck of Syscall Context Switches\n\nWhen an application invokes `read()` or `write()`:\n1. The CPU transitions from User Mode (Ring 3) to Kernel Mode (Ring 0).\n2. Registers are saved to the kernel stack.\n3. Page tables may need flushing due to Meltdown/Spectre mitigations (KPTI).\n4. After copying data, the CPU transitions back to User Mode.\n\nAt 100,000 requests per second, context switching consumes measurable CPU cycles. At 1,000,000+ requests per second, context switching accounts for over 60% of total CPU time.\n\n---\n\n## The io_uring Ring Architecture\n\nInstead of issuing synchronous or readiness-based syscalls, `io_uring` establishes two circular ring buffers mapped into shared memory between kernel and userspace:\n- **Submission Queue (SQ):** The application produces I/O requests (SQEs).\n- **Completion Queue (CQ):** The kernel posts completed results (CQEs).\n\n```c\nstruct io_uring ring;\nstruct io_uring_params params;\nmemset(&params, 0, sizeof(params));\n\n// Initialize ring with 4096 queue depth\nint ret = io_uring_queue_init_params(4096, &ring, &params);\nif (ret < 0) {\n    perror(\"io_uring_queue_init_params failed\");\n    exit(1);\n}\n```\n\n### Submission & Completion Queues\n\nSubmitting a batch of 128 socket reads requires zero syscalls per request:\n\n```c\nstruct io_uring_sqe *sqe = io_uring_get_sqe(&ring);\nio_uring_prep_recv(sqe, client_fd, buf, BUF_SIZE, 0);\nsqe->user_data = client_fd;\n\n// Submit entire batch with a single syscall\nio_uring_submit(&ring);\n```\n\n---\n\n## SQPOLL: True Zero-Syscall I/O\n\nWhen initializing `io_uring` with the `IORING_SETUP_SQPOLL` flag, the kernel spawns a dedicated kernel thread that continuously polls the Submission Queue ring.\n\nWhen you add an SQE to the ring, the kernel thread picks it up immediately. **Zero system calls are executed by the application during normal operations.**\n\n```c\nparams.flags = IORING_SETUP_SQPOLL;\nparams.sq_thread_idle = 2000; // sleep after 2000ms idle\nio_uring_queue_init_params(4096, &ring, &params);\n```\n\n---\n\n## Fixed Buffers & Page Pinning\n\nIn traditional I/O, every read/write requires the kernel to pin userspace pages in memory and create temporary scatter-gather DMA mappings.\n\nWith `io_uring_register_buffers()`, you register a contiguous memory arena upfront:\n\n```c\nstruct iovec iov[MAX_BUFFERS];\nfor (int i = 0; i < MAX_BUFFERS; i++) {\n    iov[i].iov_base = malloc(BUFFER_SIZE);\n    iov[i].iov_len = BUFFER_SIZE;\n}\n\n// Register fixed buffers with the kernel once\nio_uring_register_buffers(&ring, iov, MAX_BUFFERS);\n```\n\nNow, subsequent socket operations use `io_uring_prep_read_fixed()` or `io_uring_prep_write_fixed()`, bypassing all page table translation and mapping overhead.\n\n---\n\n## Comparative Benchmark Results\n\nRunning our open-source benchmark suite on a 64-core AMD EPYC server equipped with a Mellanox ConnectX-6 100GbE NIC:\n\n```\nepoll (4 worker threads):       1,240,000 req/s  (p99: 2.41ms)\nio_uring standard (batched):    4,890,000 req/s  (p99: 0.94ms)\nio_uring SQPOLL + Fixed Buffers: 10,250,000 req/s (p99: 0.32ms)\n```\n\nThe result is clear: by removing system calls and memory re-mapping from the execution loop, `io_uring` represents the most significant leap in Linux server performance in two decades.\n"
-    },
-    {
-      "slug": "crafting-high-performance-micro-interactions-nextjs",
-      "title": "Fluid Spring Physics & Micro-Interactions in Modern React & Next.js",
-      "description": "How to build tactile, organic interfaces with Motion (motion.dev), spring physics, 3D spotlight card tilts, and zero-jank layout transitions in Next.js 15.",
-      "publishedAt": "2025-01-12",
-      "readingTime": "7 min read",
-      "category": "Web Architecture",
-      "tags": [
-        "React 19",
-        "Next.js 15",
-        "Motion",
-        "Tailwind CSS",
-        "UI/UX",
-        "CSS"
-      ],
-      "author": {
-        "name": "Jurek",
-        "handle": "@jurek-zsl"
-      },
-      "toc": [
-        {
-          "id": "philosophy",
-          "text": "The Physics of Good UI",
-          "level": 2
-        },
-        {
-          "id": "spring-parameters",
-          "text": "Tuning Spring Stiffness & Damping",
-          "level": 2
-        },
-        {
-          "id": "cursor-spotlight",
-          "text": "Mouse-Tracking Spotlight Borders",
-          "level": 2
-        },
-        {
-          "id": "layout-id-transitions",
-          "text": "Shared Element Transitions with layoutId",
-          "level": 2
-        },
-        {
-          "id": "accessibility-reduced-motion",
-          "text": "Respecting Reduced Motion Preferences",
-          "level": 2
-        }
-      ],
-      "content": "\nStatic interfaces feel like dead documents. But excessive or linear animations feel sluggish, artificial, and frustrating. The secret to modern neo-minimalist interfaces is tactile reactivity: components that respond immediately with organic spring physics.\n\nWhen an interaction behaves like real physical matter—reacting to momentum, decelerating with natural friction, and snapping into place—the brain processes the interface with zero cognitive friction.\n\n---\n\n## The Physics of Good UI\n\nTraditional CSS transitions rely on cubic-bezier timing functions (`ease-in-out`, `ease-out`). The fundamental flaw with duration-based easing is that when a user interrupts an ongoing animation (e.g., hovering in and out rapidly), duration-based animations stutter, reverse artificially, or reset abruptly.\n\nSpring physics solve this by modeling real-world forces:\n- **Mass:** How heavy the object feels.\n- **Stiffness:** How strong the pull towards the target is.\n- **Damping:** How quickly oscillations dissipate into stillness.\n\n```tsx\n// Golden ratio spring config for snappy, organic UI feedback\nconst springTransition = {\n  type: \"spring\",\n  stiffness: 260,\n  damping: 20,\n};\n```\n\n---\n\n## Mouse-Tracking Spotlight Borders\n\nOne of the most satisfying accents in neo-minimalist dark designs is the spotlight border effect: a subtle radial gradient that follows the user's cursor across cards, illuminating borders and surfaces as if a light source is skimming the glass.\n\nHere is how to implement this cleanly in React with CSS variables and minimal re-renders:\n\n```tsx\n\"use client\";\n\nimport React, { useRef } from \"react\";\n\nexport function SpotlightCard({ children }: { children: React.ReactNode }) {\n  const cardRef = useRef<HTMLDivElement>(null);\n\n  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {\n    if (!cardRef.current) return;\n    const rect = cardRef.current.getBoundingClientRect();\n    const x = e.clientX - rect.left;\n    const y = e.clientY - rect.top;\n\n    cardRef.current.style.setProperty(\"--mouse-x\", `${x}px`);\n    cardRef.current.style.setProperty(\"--mouse-y\", `${y}px`);\n  };\n\n  return (\n    <div\n      ref={cardRef}\n      onMouseMove={handleMouseMove}\n      className=\"relative rounded-2xl border border-zinc-800/80 bg-zinc-950/80 p-6 overflow-hidden group\"\n    >\n      {/* Radial spotlight overlay */}\n      <div\n        className=\"pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100\"\n        style={{\n          background: `radial-gradient(600px circle at var(--mouse-x, 0) var(--mouse-y, 0), rgba(139, 92, 246, 0.15), transparent 40%)`,\n        }}\n      />\n      <div className=\"relative z-10\">{children}</div>\n    </div>\n  );\n}\n```\n\n---\n\n## Shared Element Transitions with layoutId\n\nIn Next.js App Router, navigating between list views and detail views often causes harsh visual jumps. Using `motion`'s `layoutId`, items seamlessly morph from a compact list card into a full-screen or expanded modal sheet:\n\n```tsx\nimport { motion, AnimatePresence } from \"motion/react\";\n\nexport function ActiveCategoryIndicator({ activeTab }: { activeTab: string }) {\n  return (\n    <div className=\"flex gap-2\">\n      {[\"All\", \"Systems\", \"Fullstack\"].map((tab) => (\n        <button key={tab} className=\"relative px-4 py-2 text-sm text-zinc-300\">\n          {tab}\n          {activeTab === tab && (\n            <motion.div\n              layoutId=\"active-pill\"\n              className=\"absolute inset-0 -z-10 rounded-full bg-violet-600/20 border border-violet-500/40\"\n              transition={{ type: \"spring\", stiffness: 300, damping: 25 }}\n            />\n          )}\n        </button>\n      ))}\n    </div>\n  );\n}\n```\n\n---\n\n## Respecting Reduced Motion Preferences\n\nAccessibility must never be an afterthought. Users prone to vestibular motion sickness configure their operating systems to minimize non-essential animations.\n\nAlways use `useReducedMotion` from `motion/react`:\n\n```tsx\nimport { useReducedMotion } from \"motion/react\";\n\nexport function FadeUpSection({ children }: { children: React.ReactNode }) {\n  const shouldReduceMotion = useReducedMotion();\n\n  const animationProps = shouldReduceMotion\n    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }\n    : {\n        initial: { opacity: 0, y: 16 },\n        animate: { opacity: 1, y: 0 },\n        transition: { type: \"spring\", stiffness: 260, damping: 20 },\n      };\n\n  return <motion.div {...animationProps}>{children}</motion.div>;\n}\n```\n\nBy pairing restrained physics curves with strict accessibility defaults, your interface feels fast, responsive, and comfortable over hours of daily use.\n"
-    }
-  ],
+  "posts": [],
   "projects": [
     {
       "id": "ohio-cli",
@@ -313,7 +159,7 @@
     {
       "id": "openclock",
       "slug": "openclock",
-      "title": "OpenClock Brawl .io",
+      "title": "OpenClock",
       "tagline": "Multiplayer Cyberpunk Brawl LAN Game Engine",
       "description": "A fast-paced local area network cyberpunk multiplayer brawl game built with JavaScript, WebSockets, and HTML5 Canvas. Zero-config hosting by running a single batch/shell script on any LAN machine.",
       "category": "fullstack",
@@ -657,6 +503,6 @@
     "ecosystem": "ohiofiles.cloud · Homebrew · Jellyfin",
     "flagships": "ohio-cli · antiQuarantine · openclock · MumbleMica",
     "bio": "High-speed Go CLIs & TUIs, native macOS system tools, real-time LAN multiplayer games, browser extensions, desktop app mods, and pure monospace web apps.",
-    "email": "jurek@jurekdev.qzz.io"
+    "email": "george@otcsoft.com"
   }
 }

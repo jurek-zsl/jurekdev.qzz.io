@@ -164,41 +164,42 @@ export function ProjectsClient({ initialProjects = PROJECTS }: ProjectsClientPro
                 )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#e5e5e5]">
-                <div className="flex flex-wrap gap-1 mb-3 text-[11px] text-[#38bdf8]">
+              <div className="mt-4 pt-3 border-t border-[#e5e5e5] space-y-2">
+                <div className="flex flex-wrap gap-1 text-[11px] text-[#38bdf8] min-h-[1.5rem]">
                   {project.techStack.map((tech) => (
                     <span key={tech}>[{tech}]</span>
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between text-xs">
+                <div className="grid grid-cols-2 gap-1.5 text-xs font-mono">
                   <button
                     onClick={() => setSelectedProject(project)}
-                    className="border border-[#38bdf8] px-2 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
+                    className="col-span-2 w-full border border-[#38bdf8] bg-[#000000] py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer text-center font-bold transition-colors whitespace-nowrap"
                   >
-                    [SPECS]
+                    [DETAILS &amp; SPECS]
                   </button>
 
-                  <div className="flex items-center gap-2">
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`border border-[#e5e5e5] bg-[#000000] py-1 text-xs text-[#e5e5e5] hover:bg-[#e5e5e5] hover:text-[#000000] text-center transition-colors whitespace-nowrap ${
+                      project.liveUrl ? "col-span-1" : "col-span-2"
+                    }`}
+                  >
+                    {project.liveUrl ? "[REPO ↗]" : "[GITHUB REPO ↗]"}
+                  </a>
+
+                  {project.liveUrl && (
                     <a
-                      href={project.githubUrl}
+                      href={project.liveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="border border-[#e5e5e5] px-2 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
+                      className="col-span-1 border border-[#38bdf8] bg-[#000000] py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] text-center transition-colors whitespace-nowrap"
                     >
-                      [REPO ↗]
+                      [DEMO ↗]
                     </a>
-                    {project.liveUrl && (
-                      <a
-                        href={project.liveUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="border border-[#38bdf8] px-2 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000]"
-                      >
-                        [DEMO ↗]
-                      </a>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </GlassCard>
