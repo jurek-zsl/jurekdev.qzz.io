@@ -17,17 +17,26 @@ import {
   switchThemeWithAnimation,
 } from "@/lib/theme";
 
-type AdminTab = "posts" | "projects" | "skills" | "profile" | "theme" | "raw_json";
-
-const DEFAULT_AUTH_KEY = "jurek2026";
+type AdminTab = "posts" | "projects" | "skills" | "profile" | "theme" | "security" | "raw_json";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("posts");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [accentColorInput, setAccentColorInput] = useState<string>(DEFAULT_ACCENT);
+
+  // Change Password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Core editable datasets
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -66,12 +75,9 @@ export default function AdminPage() {
   // Raw JSON Editor State
   const [rawJsonText, setRawJsonText] = useState("");
 
-  // Check existing session & initialize accent
+  // Check server-side HTTP-only session on mount
   useEffect(() => {
-    const authSession = sessionStorage.getItem("jurekdev_admin_auth");
-    if (authSession === "true") {
-      setIsAuthenticated(true);
-    }
+    checkServerAuth();
     const saved = getSavedAccentColor();
     if (saved) {
       setAccentColorInput(saved);
@@ -79,12 +85,36 @@ export default function AdminPage() {
     }
   }, []);
 
+  const checkServerAuth = async () => {
+    try {
+      setCheckingAuth(true);
+      const res = await fetch("/api/admin/auth-check");
+      const json = await res.json();
+      if (json.authenticated) {
+        setIsAuthenticated(true);
+        loadData();
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch {
+      setIsAuthenticated(false);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
   // Fetch data from server
   const loadData = async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/admin/data");
-      if (!res.ok) throw new Error("Failed to fetch data");
+      if (!res.ok) {
+        if (res.status === 401) {
+          setIsAuthenticated(false);
+          return;
+        }
+        throw new Error("Failed to fetch data");
+      }
       const data: SiteData = await res.json();
       setPosts(data.posts || []);
       setProjects(data.projects || []);
@@ -125,28 +155,88 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated]);
-
-  // Handle Authentication
-  const handleLogin = (e: React.FormEvent) => {
+  // Real Server-Side Login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput.trim() === DEFAULT_AUTH_KEY || passwordInput.trim() === "admin") {
+    if (!passwordInput.trim()) {
+      toast.error("AUTH ERROR: Passkey cannot be blank");
+      return;
+    }
+
+    try {
+      setLoggingIn(true);
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passwordInput.trim() }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Authentication failed");
+      }
+
       setIsAuthenticated(true);
-      sessionStorage.setItem("jurekdev_admin_auth", "true");
-      toast.success("ROOT ACCESS GRANTED: Session verified");
-    } else {
-      toast.error("AUTH ERROR: Invalid security passkey (Default: jurek2026)");
+      setPasswordInput("");
+      toast.success("ROOT ACCESS GRANTED: Cryptographic session active");
+      loadData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "ACCESS DENIED");
+    } finally {
+      setLoggingIn(false);
     }
   };
 
-  const handleLogout = () => {
+  // Real Server-Side Logout
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     setIsAuthenticated(false);
-    sessionStorage.removeItem("jurekdev_admin_auth");
-    toast.info("SESSION TERMINATED: Signed out");
+    setPasswordInput("");
+    toast.info("SESSION TERMINATED: Signed out of admin console");
+  };
+
+  // Change Admin Password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword) {
+      toast.error("Please enter your current admin password");
+      return;
+    }
+    if (newPassword.length < 4) {
+      toast.error("New password must be at least 4 characters long");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to update admin password");
+      }
+
+      toast.success("OK: Admin password successfully updated and persisted to server!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to change password");
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   // Save all changes to server
@@ -167,6 +257,10 @@ export default function AdminPage() {
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          setIsAuthenticated(false);
+          throw new Error("UNAUTHORIZED: Session expired or invalid. Please re-authenticate.");
+        }
         const errorJson = await res.json();
         throw new Error(errorJson.error || "Save failed");
       }
@@ -406,40 +500,65 @@ export default function AdminPage() {
   };
 
   // ----------------------------------------------------
-  // LOGIN SCREEN
+  // LOGIN SCREEN & SESSION CHECK
   // ----------------------------------------------------
+  if (checkingAuth) {
+    return (
+      <div className="py-24 font-mono text-[#e5e5e5] max-w-md mx-auto">
+        <div className="border border-[#e5e5e5] bg-[#000000] p-6 space-y-3 text-center">
+          <div className="text-xs text-[#38bdf8] font-bold animate-pulse">
+            // VERIFYING_SESSION_CREDENTIALS...
+          </div>
+          <p className="text-[11px] text-[#e5e5e5]/70">
+            [CHECKING CRYPTOGRAPHIC HTTP-ONLY COOKIE AUTHENTICATION]
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="py-20 font-mono text-[#e5e5e5] max-w-md mx-auto">
-        <div className="border border-[#e5e5e5] bg-[#000000] p-6 space-y-4">
+        <div className="border border-[#e5e5e5] bg-[#000000] p-6 space-y-4 shadow-2xl">
           <div className="border-b border-[#e5e5e5] pb-2 flex items-center justify-between">
             <span className="text-[#38bdf8] font-bold text-xs">ROOT ACCESS SECURITY GATE</span>
-            <span className="text-[10px] text-[#e5e5e5]">[AUTH: REQ]</span>
+            <span className="text-[10px] text-[#e5e5e5] font-bold">[PROTECTED: SHA-256]</span>
           </div>
 
           <p className="text-xs text-[#e5e5e5] leading-relaxed">
-            Enter administrative root passkey to manage blog articles, projects, telemetry, and system variables.
+            Administrative root passkey required. Verifies against server-side secret and issues an HMAC-signed HTTP-only session cookie.
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-[11px] text-[#38bdf8]">ACCESS_KEY&gt;</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] text-[#38bdf8]">ACCESS_KEY&gt;</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-[10px] text-[#e5e5e5]/60 hover:text-[#38bdf8] cursor-pointer"
+                >
+                  [{showPassword ? "HIDE" : "SHOW"}]
+                </button>
+              </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Default: jurek2026"
+                placeholder="Enter root admin password..."
                 className="w-full border border-[#e5e5e5] bg-[#000000] p-2 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
                 autoFocus
+                disabled={loggingIn}
               />
             </div>
 
             <div className="flex items-center justify-between pt-2">
               <Link href="/" className="text-xs text-[#e5e5e5] hover:text-[#38bdf8]">
-                [&lt; CANCEL]
+                [&lt; PUBLIC HOME]
               </Link>
-              <SpotlightButton variant="primary" size="sm" type="submit">
-                AUTHENTICATE ↵
+              <SpotlightButton variant="primary" size="sm" type="submit" disabled={loggingIn}>
+                {loggingIn ? "AUTHENTICATING..." : "ROOT AUTHENTICATE ↵"}
               </SpotlightButton>
             </div>
           </form>
@@ -460,6 +579,10 @@ export default function AdminPage() {
             [ROOT@jurekdev.qzz.io]
           </span>
           <span className="text-[#38bdf8]">MODE: SYSTEM_ADMIN</span>
+          <span>|</span>
+          <span className="text-[10px] border border-[#38bdf8] px-1.5 py-0.2 text-[#38bdf8]">
+            ● HTTP_ONLY_SESSION: ACTIVE
+          </span>
           <span>|</span>
           <span className="text-[#e5e5e5]">POSTS: {posts.length} · PROJ: {projects.length} · SKILLS: {skills.length}</span>
           <span>|</span>
@@ -496,8 +619,9 @@ export default function AdminPage() {
           <button
             onClick={handleLogout}
             className="border border-[#e5e5e5] px-2 py-1 text-xs text-[#e5e5e5] hover:border-red-500 hover:text-red-400 cursor-pointer"
+            title="Terminate session and remove HTTP-only cookie"
           >
-            [EXIT]
+            [SIGN OUT ⏻]
           </button>
         </div>
       </div>
@@ -565,6 +689,17 @@ export default function AdminPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab("security")}
+          className={`px-3 py-1.5 border cursor-pointer font-bold ${
+            activeTab === "security"
+              ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000]"
+              : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
+          }`}
+        >
+          [06: SECURITY &amp; PASSKEY]
+        </button>
+
+        <button
           onClick={() => {
             setActiveTab("raw_json");
             setRawJsonText(JSON.stringify({ posts, projects, skills, profile }, null, 2));
@@ -575,7 +710,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [06: RAW_JSON_DATABASE]
+          [07: RAW_JSON_DATABASE]
         </button>
       </div>
 
@@ -1825,7 +1960,137 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 6: RAW JSON DATABASE & BACKUP/RESTORE */}
+      {/* TAB 06: SECURITY & PASSKEY MANAGEMENT */}
+      {/* ======================================================== */}
+      {!loading && activeTab === "security" && (
+        <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-6">
+          <div className="border-b border-[#e5e5e5] pb-2 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-[#38bdf8]">
+                === ROOT ACCESS SECURITY TELEMETRY &amp; PASSKEY VAULT ===
+              </span>
+              <p className="text-[11px] text-[#e5e5e5]">
+                Manage administrative passwords, server session tokens, and route protection.
+              </p>
+            </div>
+            <span className="text-[10px] border border-[#38bdf8] px-1.5 py-0.5 text-[#38bdf8] font-bold">
+              ● CRYPTOGRAPHIC_VAULT: ENFORCED
+            </span>
+          </div>
+
+          {/* Security Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="border border-[#e5e5e5] p-3 space-y-1.5">
+              <span className="text-[10px] text-[#e5e5e5]/60">// SESSION SECURITY</span>
+              <div className="text-xs font-bold text-[#38bdf8]">HTTP-Only Cookie</div>
+              <p className="text-[11px] text-[#e5e5e5]/80 leading-relaxed">
+                Tokens are stored in a SameSite Lax HTTP-only cookie, inaccessible to browser JavaScript.
+              </p>
+            </div>
+
+            <div className="border border-[#e5e5e5] p-3 space-y-1.5">
+              <span className="text-[10px] text-[#e5e5e5]/60">// CIPHER ALGORITHM</span>
+              <div className="text-xs font-bold text-[#38bdf8]">HMAC-SHA256 Timing-Safe</div>
+              <p className="text-[11px] text-[#e5e5e5]/80 leading-relaxed">
+                Verification uses constant-time buffers to eliminate side-channel and timing attacks.
+              </p>
+            </div>
+
+            <div className="border border-[#e5e5e5] p-3 space-y-1.5">
+              <span className="text-[10px] text-[#e5e5e5]/60">// PROTECTED APIS</span>
+              <div className="text-xs font-bold text-[#38bdf8]">POST /api/admin/*</div>
+              <p className="text-[11px] text-[#e5e5e5]/80 leading-relaxed">
+                Mutations are blocked at the server boundary unless validated with a signed token.
+              </p>
+            </div>
+          </div>
+
+          {/* Change Password Form */}
+          <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4 max-w-xl">
+            <div className="border-b border-[#e5e5e5] pb-2">
+              <span className="text-xs font-bold text-[#38bdf8]">
+                -- CHANGE ADMINISTRATIVE ROOT PASSWORD --
+              </span>
+              <p className="text-[11px] text-[#e5e5e5]/70 mt-0.5">
+                Update the server-side passkey. Changes are persisted to the server and your session will be refreshed.
+              </p>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
+              <div>
+                <label className="text-[11px] text-[#38bdf8] block mb-1">CURRENT PASSWORD</label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter existing password..."
+                    className="w-full border border-[#e5e5e5] bg-[#000000] p-2 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-2 top-2 text-[10px] text-[#e5e5e5]/60 hover:text-[#38bdf8] cursor-pointer"
+                  >
+                    [{showCurrentPassword ? "HIDE" : "SHOW"}]
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#38bdf8] block mb-1">NEW PASSWORD (MIN 4 CHARS)</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new secure password..."
+                    className="w-full border border-[#e5e5e5] bg-[#000000] p-2 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                    required
+                    minLength={4}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-2 text-[10px] text-[#e5e5e5]/60 hover:text-[#38bdf8] cursor-pointer"
+                  >
+                    [{showNewPassword ? "HIDE" : "SHOW"}]
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#38bdf8] block mb-1">CONFIRM NEW PASSWORD</label>
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Re-enter new secure password..."
+                  className="w-full border border-[#e5e5e5] bg-[#000000] p-2 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                  required
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <span className="text-[10px] text-[#e5e5e5]/50">
+                  Tip: Can also be set in .env.local via ADMIN_PASSWORD=...
+                </span>
+                <button
+                  type="submit"
+                  disabled={updatingPassword}
+                  className="border border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold px-3 py-1 text-xs hover:bg-[#000000] hover:text-[#38bdf8] cursor-pointer disabled:opacity-50"
+                >
+                  {updatingPassword ? "[UPDATING PASSKEY...]" : "[SAVE & ROTATE PASSWORD ↵]"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 07: RAW JSON DATABASE & BACKUP/RESTORE */}
       {/* ======================================================== */}
       {!loading && activeTab === "raw_json" && (
         <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4">

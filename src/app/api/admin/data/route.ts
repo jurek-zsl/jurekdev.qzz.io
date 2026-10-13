@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSiteData, saveSiteData } from "@/lib/store-server";
 import { SiteData } from "@/lib/store-types";
+import { isAuthenticatedRequest } from "@/lib/auth-server";
 
 export async function GET() {
   const data = getSiteData();
@@ -9,6 +10,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!isAuthenticatedRequest(request)) {
+      return NextResponse.json(
+        { error: "UNAUTHORIZED: Real administrative authentication required." },
+        { status: 401 }
+      );
+    }
+
     const body: SiteData = await request.json();
 
     if (!body || !Array.isArray(body.posts) || !Array.isArray(body.projects)) {
