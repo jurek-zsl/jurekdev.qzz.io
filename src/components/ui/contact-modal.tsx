@@ -37,22 +37,41 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
       return;
     }
 
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsSubmitting(false);
-    setSubmitted(true);
+    try {
+      setIsSubmitting(true);
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          type,
+          message: message.trim(),
+        }),
+      });
 
-    toast.success("OK: Message transmitted", {
-      description: `Receiver: ${receiverEmail} · Sender: ${email}`,
-    });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to transmit message");
+      }
 
-    setTimeout(() => {
-      setSubmitted(false);
-      setName("");
-      setEmail("");
-      setMessage("");
-      onOpenChange(false);
-    }, 1800);
+      setSubmitted(true);
+      toast.success("OK: Message transmitted successfully", {
+        description: `Delivered to administrative queue · ID: ${data.id}`,
+      });
+
+      setTimeout(() => {
+        setSubmitted(false);
+        setName("");
+        setEmail("");
+        setMessage("");
+        onOpenChange(false);
+      }, 2000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "ERR: Transmission failed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

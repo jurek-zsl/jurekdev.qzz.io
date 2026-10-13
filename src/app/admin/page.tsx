@@ -5,8 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { BlogPost } from "@/types/blog";
 import { Project, ProjectCategory } from "@/types/project";
-import { TechItem } from "@/data/tech-stack";
-import { ProfileData, SiteData } from "@/lib/store";
+import { ProfileData, SiteData, ContactMessage, TechItem } from "@/lib/store";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
 import {
   ACCENT_PRESETS,
@@ -17,7 +16,7 @@ import {
   switchThemeWithAnimation,
 } from "@/lib/theme";
 
-type AdminTab = "posts" | "projects" | "skills" | "profile" | "theme" | "security" | "raw_json";
+type AdminTab = "inbox" | "posts" | "projects" | "skills" | "profile" | "theme" | "security" | "raw_json";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,6 +36,13 @@ export default function AdminPage() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Inbox / Contact transmissions state
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [messageFilter, setMessageFilter] = useState<"ALL" | "UNREAD" | "REPLIED">("ALL");
+  const [messageSearch, setMessageSearch] = useState("");
+  const [refreshingInbox, setRefreshingInbox] = useState(false);
 
   // Core editable datasets
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -119,6 +125,9 @@ export default function AdminPage() {
       setPosts(data.posts || []);
       setProjects(data.projects || []);
       setSkills(data.skills || []);
+      if (Array.isArray(data.messages)) {
+        setMessages(data.messages);
+      }
       if (data.profile) {
         setProfile(data.profile);
         const color = data.profile.accentColor || getSavedAccentColor() || DEFAULT_ACCENT;
@@ -248,6 +257,7 @@ export default function AdminPage() {
         projects,
         skills,
         profile,
+        messages,
       };
 
       const res = await fetch("/api/admin/data", {
@@ -272,6 +282,122 @@ export default function AdminPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // --- INBOX / CONTACT TRANSMISSION HELPERS ---
+  const fetchMessages = async () => {
+    try {
+      setRefreshingInbox(true);
+      const res = await fetch("/api/admin/messages");
+      if (!res.ok) throw new Error("Failed to fetch inbox messages");
+      const json = await res.json();
+      setMessages(json.messages || []);
+      toast.success("OK: Inbox synchronized with server disk");
+    } catch {
+      toast.error("ERR: Failed to refresh inbox");
+    } finally {
+      setRefreshingInbox(false);
+    }
+  };
+
+  const unreadCount = useMemo(() => {
+    return messages.filter((m) => !m.read).length;
+  }, [messages]);
+
+  const filteredMessages = useMemo(() => {
+    return messages.filter((m) => {
+      if (messageFilter === "UNREAD" && m.read) return false;
+      if (messageFilter === "REPLIED" && !m.replied) return false;
+      if (messageSearch.trim()) {
+        const query = messageSearch.toLowerCase();
+        return (
+          m.name.toLowerCase().includes(query) ||
+          m.email.toLowerCase().includes(query) ||
+          m.type.toLowerCase().includes(query) ||
+          m.message.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    });
+  }, [messages, messageFilter, messageSearch]);
+
+  const activeSelectedMessage = useMemo(() => {
+    return messages.find((m) => m.id === selectedMessageId) || null;
+  }, [messages, selectedMessageId]);
+
+  const handleToggleRead = async (msg: ContactMessage) => {
+    const nextRead = !msg.read;
+    setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, read: nextRead } : m)));
+    try {
+      const res = await fetch("/api/admin/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: msg.id, read: nextRead }),
+      });
+      if (!res.ok) throw new Error("Failed to update read status");
+    } catch {
+      toast.error("ERR: Failed to update read status");
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, read: msg.read } : m)));
+    }
+  };
+
+  const handleToggleReplied = async (msg: ContactMessage) => {
+    const nextReplied = !msg.replied;
+    setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, replied: nextReplied } : m)));
+    try {
+      const res = await fetch("/api/admin/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: msg.id, replied: nextReplied }),
+      });
+      if (!res.ok) throw new Error("Failed to update replied status");
+    } catch {
+      toast.error("ERR: Failed to update replied status");
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, replied: msg.replied } : m)));
+    }
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this contact transmission?")) return;
+    try {
+      const res = await fetch(`/api/admin/messages?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete message");
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      if (selectedMessageId === id) setSelectedMessageId(null);
+      toast.success("OK: Transmission removed from inbox");
+    } catch {
+      toast.error("ERR: Failed to delete transmission");
+    }
+  };
+
+  const handleReplyEmail = (msg: ContactMessage) => {
+    if (!msg.read || !msg.replied) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, read: true, replied: true } : m))
+      );
+      fetch("/api/admin/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: msg.id, read: true, replied: true }),
+      }).catch(() => {});
+    }
+
+    const subject = encodeURIComponent(`Re: [jurekdev.qzz.io] ${msg.type}`);
+    const quoted = msg.message
+      .split("\n")
+      .map((line) => `> ${line}`)
+      .join("\n");
+    const body = encodeURIComponent(
+      `Hi ${msg.name},\n\nThank you for reaching out via jurekdev.qzz.io.\n\n${quoted}\n\n--\nLishafai Heorhii (Jurek)\njurekdev.qzz.io`
+    );
+    window.open(`mailto:${msg.email}?subject=${subject}&body=${body}`, "_self");
+  };
+
+  const handleCopyEmail = (email: string) => {
+    navigator.clipboard.writeText(email);
+    toast.success(`Copied "${email}" to clipboard`);
   };
 
   // --- BLOG POST HELPERS ---
@@ -456,6 +582,7 @@ export default function AdminPage() {
       setProjects(parsed.projects);
       if (Array.isArray(parsed.skills)) setSkills(parsed.skills);
       if (parsed.profile) setProfile(parsed.profile);
+      if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
       handleSaveAll(parsed);
       toast.success("OK: Raw JSON database parsed and synced to disk");
     } catch (err) {
@@ -464,7 +591,7 @@ export default function AdminPage() {
   };
 
   const handleExportJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ posts, projects, skills, profile }, null, 2));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ posts, projects, skills, profile, messages }, null, 2));
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute("download", `jurekdev-backup-${new Date().toISOString().slice(0, 10)}.json`);
@@ -489,6 +616,7 @@ export default function AdminPage() {
         setProjects(parsed.projects);
         if (Array.isArray(parsed.skills)) setSkills(parsed.skills);
         if (parsed.profile) setProfile(parsed.profile);
+        if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
         setRawJsonText(JSON.stringify(parsed, null, 2));
         handleSaveAll(parsed);
         toast.success(`OK: Imported ${parsed.posts.length} posts, ${parsed.projects.length} projects, ${(parsed.skills || []).length} skills`);
@@ -584,6 +712,19 @@ export default function AdminPage() {
             ● HTTP_ONLY_SESSION: ACTIVE
           </span>
           <span>|</span>
+          <button
+            onClick={() => setActiveTab("inbox")}
+            className="cursor-pointer hover:underline text-[#38bdf8] flex items-center gap-1 font-bold"
+            title="Open Contact Inbox"
+          >
+            <span>INBOX: {messages.length}</span>
+            {unreadCount > 0 && (
+              <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold text-[10px] animate-pulse">
+                {unreadCount} NEW
+              </span>
+            )}
+          </button>
+          <span>|</span>
           <span className="text-[#e5e5e5]">POSTS: {posts.length} · PROJ: {projects.length} · SKILLS: {skills.length}</span>
           <span>|</span>
           <div className="flex items-center gap-1.5 border border-[#e5e5e5] px-2 py-0.5">
@@ -629,6 +770,28 @@ export default function AdminPage() {
       {/* Main Tab Controls */}
       <div className="flex flex-wrap gap-2 text-xs border-b border-[#e5e5e5] pb-2">
         <button
+          onClick={() => setActiveTab("inbox")}
+          className={`px-3 py-1.5 border cursor-pointer font-bold flex items-center gap-1.5 ${
+            activeTab === "inbox"
+              ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000]"
+              : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
+          }`}
+        >
+          <span>[01: INBOX / CONTACT ({messages.length})]</span>
+          {unreadCount > 0 && (
+            <span
+              className={`${
+                activeTab === "inbox"
+                  ? "bg-[#000000] text-[#38bdf8]"
+                  : "bg-[#38bdf8] text-[#000000]"
+              } px-1 py-0.2 text-[10px] font-bold`}
+            >
+              {unreadCount} NEW
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab("posts")}
           className={`px-3 py-1.5 border cursor-pointer font-bold ${
             activeTab === "posts"
@@ -636,7 +799,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [01: BLOG_ARTICLES ({posts.length})]
+          [02: BLOG_ARTICLES ({posts.length})]
         </button>
 
         <button
@@ -647,7 +810,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [02: PROJECTS_SHOWCASE ({projects.length})]
+          [03: PROJECTS_SHOWCASE ({projects.length})]
         </button>
 
         <button
@@ -658,7 +821,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [03: DEV_STACK ({skills.length})]
+          [04: DEV_STACK ({skills.length})]
         </button>
 
         <button
@@ -669,7 +832,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [04: SYSTEM_PROFILE]
+          [05: SYSTEM_PROFILE]
         </button>
 
         <button
@@ -680,7 +843,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          <span>[05: ACCENT_THEME</span>
+          <span>[06: ACCENT_THEME</span>
           <span
             className="w-2.5 h-2.5 inline-block border border-current"
             style={{ backgroundColor: accentColorInput }}
@@ -696,13 +859,13 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [06: SECURITY &amp; PASSKEY]
+          [07: SECURITY &amp; PASSKEY]
         </button>
 
         <button
           onClick={() => {
             setActiveTab("raw_json");
-            setRawJsonText(JSON.stringify({ posts, projects, skills, profile }, null, 2));
+            setRawJsonText(JSON.stringify({ posts, projects, skills, profile, messages }, null, 2));
           }}
           className={`px-3 py-1.5 border cursor-pointer font-bold ${
             activeTab === "raw_json"
@@ -710,7 +873,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [07: RAW_JSON_DATABASE]
+          [08: RAW_JSON_DATABASE]
         </button>
       </div>
 
@@ -721,7 +884,304 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 1: BLOG ARTICLES MANAGER */}
+      {/* TAB 01: INBOX & CONTACT TRANSMISSIONS */}
+      {/* ======================================================== */}
+      {!loading && activeTab === "inbox" && (
+        <div className="space-y-6">
+          <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4">
+            <div className="border-b border-[#e5e5e5] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#38bdf8]">
+                    === INBOX &amp; CONTACT INQUIRIES ===
+                  </span>
+                  {unreadCount > 0 && (
+                    <span className="bg-[#38bdf8] text-[#000000] px-1.5 py-0.2 text-[10px] font-bold animate-pulse">
+                      {unreadCount} UNREAD
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-[#e5e5e5]/80 mt-0.5">
+                  Real submissions from the public /contact modal. Persistently stored in /src/data/db.json.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={fetchMessages}
+                  disabled={refreshingInbox}
+                  className="border border-[#38bdf8] px-2.5 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer disabled:opacity-50"
+                >
+                  {refreshingInbox ? "[SYNCING...]" : "[REFRESH INBOX ↻]"}
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[#e5e5e5]/60">FILTER:</span>
+                <button
+                  onClick={() => setMessageFilter("ALL")}
+                  className={`px-2 py-0.5 border text-xs cursor-pointer ${
+                    messageFilter === "ALL"
+                      ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                      : "border-[#e5e5e5] text-[#e5e5e5] hover:border-[#38bdf8]"
+                  }`}
+                >
+                  ALL ({messages.length})
+                </button>
+                <button
+                  onClick={() => setMessageFilter("UNREAD")}
+                  className={`px-2 py-0.5 border text-xs cursor-pointer ${
+                    messageFilter === "UNREAD"
+                      ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                      : "border-[#e5e5e5] text-[#e5e5e5] hover:border-[#38bdf8]"
+                  }`}
+                >
+                  UNREAD ({unreadCount})
+                </button>
+                <button
+                  onClick={() => setMessageFilter("REPLIED")}
+                  className={`px-2 py-0.5 border text-xs cursor-pointer ${
+                    messageFilter === "REPLIED"
+                      ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                      : "border-[#e5e5e5] text-[#e5e5e5] hover:border-[#38bdf8]"
+                  }`}
+                >
+                  REPLIED ({messages.filter((m) => m.replied).length})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={messageSearch}
+                  onChange={(e) => setMessageSearch(e.target.value)}
+                  placeholder="Search sender, email, content..."
+                  className="border border-[#e5e5e5] bg-[#000000] px-2 py-1 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8] w-full sm:w-60"
+                />
+                {messageSearch && (
+                  <button
+                    onClick={() => setMessageSearch("")}
+                    className="text-[11px] text-[#e5e5e5]/60 hover:text-red-400 cursor-pointer"
+                  >
+                    [CLEAR]
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Main Split Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
+              {/* Left Column: Messages List (5 cols on lg) */}
+              <div className="lg:col-span-5 space-y-2">
+                <div className="text-[11px] text-[#38bdf8] font-bold pb-1 border-b border-[#e5e5e5]/40 flex justify-between">
+                  <span>QUEUE ({filteredMessages.length})</span>
+                  <span className="text-[#e5e5e5]/50">CLICK TO SELECT</span>
+                </div>
+
+                {filteredMessages.length === 0 ? (
+                  <div className="border border-dashed border-[#e5e5e5]/40 p-6 text-center text-xs text-[#e5e5e5]/60">
+                    [NO TRANSMISSIONS RECORDED]
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                    {filteredMessages.map((msg) => {
+                      const isSelected = selectedMessageId === msg.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          onClick={() => {
+                            setSelectedMessageId(msg.id);
+                            if (!msg.read) {
+                              handleToggleRead(msg);
+                            }
+                          }}
+                          className={`p-3 border cursor-pointer transition-colors text-xs space-y-1.5 ${
+                            isSelected
+                              ? "border-[#38bdf8] bg-[#38bdf8]/10"
+                              : msg.read
+                              ? "border-[#e5e5e5]/50 bg-[#000000] hover:border-[#38bdf8]/70"
+                              : "border-[#38bdf8] bg-[#38bdf8]/5 font-semibold hover:bg-[#38bdf8]/10"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 truncate">
+                              {!msg.read ? (
+                                <span className="w-2 h-2 rounded-full bg-[#38bdf8] shrink-0 animate-pulse" title="Unread" />
+                              ) : (
+                                <span className="w-2 h-2 rounded-full bg-[#e5e5e5]/30 shrink-0" title="Read" />
+                              )}
+                              <span className="truncate text-[#e5e5e5] font-bold">
+                                {msg.name}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-[#e5e5e5]/60 shrink-0">
+                              {new Date(msg.createdAt).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] text-[#38bdf8] truncate">
+                            {msg.email}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-[10px]">
+                            <span className="bg-[#e5e5e5]/20 text-[#e5e5e5] px-1 py-0.2">
+                              {msg.type}
+                            </span>
+                            {msg.replied && (
+                              <span className="border border-green-500 text-green-400 px-1 py-0.2 font-bold">
+                                ✓ REPLIED
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-[11px] text-[#e5e5e5]/70 line-clamp-2">
+                            {msg.message}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Message Detail & Action Console (7 cols on lg) */}
+              <div className="lg:col-span-7">
+                {activeSelectedMessage ? (
+                  <div className="border border-[#e5e5e5] bg-[#000000] p-4 space-y-4 sticky top-4">
+                    <div className="border-b border-[#e5e5e5] pb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#38bdf8]">
+                          // TRANSMISSION: {activeSelectedMessage.id}
+                        </span>
+                        {!activeSelectedMessage.read && (
+                          <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold text-[10px]">
+                            NEW
+                          </span>
+                        )}
+                        {activeSelectedMessage.replied && (
+                          <span className="border border-green-500 text-green-400 px-1 font-bold text-[10px]">
+                            REPLIED
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleRead(activeSelectedMessage)}
+                          className="text-[10px] border border-[#e5e5e5] px-2 py-0.5 hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+                        >
+                          [{activeSelectedMessage.read ? "MARK UNREAD" : "MARK READ"}]
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMessage(activeSelectedMessage.id)}
+                          className="text-[10px] border border-red-500 px-2 py-0.5 text-red-400 hover:bg-red-500 hover:text-[#000000] cursor-pointer"
+                        >
+                          [DELETE ✕]
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Metadata Header */}
+                    <div className="space-y-1.5 text-xs bg-[#e5e5e5]/5 p-3 border border-[#e5e5e5]/30">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <div>
+                          <span className="text-[#38bdf8] font-bold">FROM: </span>
+                          <span className="text-[#e5e5e5] font-bold">{activeSelectedMessage.name}</span>
+                        </div>
+                        <div className="text-[11px] text-[#e5e5e5]/70">
+                          RECEIVED: {activeSelectedMessage.createdAt}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="truncate">
+                          <span className="text-[#38bdf8] font-bold">EMAIL: </span>
+                          <span className="text-[#e5e5e5]">{activeSelectedMessage.email}</span>
+                        </div>
+                        <button
+                          onClick={() => handleCopyEmail(activeSelectedMessage.email)}
+                          className="text-[10px] border border-[#e5e5e5] px-1.5 py-0.2 hover:border-[#38bdf8] hover:text-[#38bdf8] shrink-0 cursor-pointer"
+                        >
+                          [COPY]
+                        </button>
+                      </div>
+
+                      <div>
+                        <span className="text-[#38bdf8] font-bold">INTENT / TOPIC: </span>
+                        <span className="bg-[#38bdf8] text-[#000000] px-1.5 py-0.2 text-[10px] font-bold">
+                          {activeSelectedMessage.type}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Message Body */}
+                    <div className="space-y-1.5">
+                      <div className="text-[11px] text-[#38bdf8] font-bold">
+                        MESSAGE_PAYLOAD&gt;
+                      </div>
+                      <div className="border border-[#e5e5e5] bg-[#000000] p-3 text-xs text-[#e5e5e5] whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto selection:bg-[#38bdf8] selection:text-[#000000]">
+                        {activeSelectedMessage.message}
+                      </div>
+                    </div>
+
+                    {/* Response Console */}
+                    <div className="pt-2 border-t border-[#e5e5e5] space-y-3">
+                      <div className="text-[11px] text-[#38bdf8] font-bold">
+                        OPERATIONAL_ACTIONS&gt;
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => handleReplyEmail(activeSelectedMessage)}
+                          className="border border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold px-3 py-1.5 text-xs hover:bg-[#000000] hover:text-[#38bdf8] cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>[ANSWER VIA EMAIL CLIENT ↗]</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleReplied(activeSelectedMessage)}
+                          className="border border-[#e5e5e5] px-2.5 py-1.5 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+                        >
+                          [{activeSelectedMessage.replied ? "MARK AS UNREPLIED" : "MARK AS REPLIED ✓"}]
+                        </button>
+
+                        <button
+                          onClick={() => handleCopyEmail(activeSelectedMessage.email)}
+                          className="border border-[#e5e5e5] px-2.5 py-1.5 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+                        >
+                          [COPY SENDER EMAIL]
+                        </button>
+                      </div>
+
+                      <p className="text-[10px] text-[#e5e5e5]/50">
+                        * Clicking [ANSWER VIA EMAIL CLIENT] opens your default mail app with pre-filled recipient ({activeSelectedMessage.email}), subject line, and quoted transmission body.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-[#e5e5e5]/40 p-12 text-center text-xs text-[#e5e5e5]/60 flex flex-col items-center justify-center min-h-[300px] space-y-2">
+                    <span className="text-[#38bdf8] font-bold">// NO_TRANSMISSION_SELECTED</span>
+                    <p className="max-w-xs text-[11px] text-[#e5e5e5]/70">
+                      Select any transmission from the queue on the left to inspect its full buffer payload, copy sender details, or trigger a direct reply.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 02: BLOG ARTICLES MANAGER */}
       {/* ======================================================== */}
       {!loading && activeTab === "posts" && (
         <div className="space-y-6">
@@ -2134,7 +2594,7 @@ export default function AdminPage() {
 
           <div className="pt-2 border-t border-[#e5e5e5] flex items-center justify-between">
             <button
-              onClick={() => setRawJsonText(JSON.stringify({ posts, projects, skills, profile }, null, 2))}
+              onClick={() => setRawJsonText(JSON.stringify({ posts, projects, skills, profile, messages }, null, 2))}
               className="border border-[#e5e5e5] px-3 py-1 text-xs text-[#e5e5e5] hover:border-red-400 hover:text-red-400"
             >
               [RESET CHANGES]

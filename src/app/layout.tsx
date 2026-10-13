@@ -62,6 +62,13 @@ export const metadata: Metadata = {
       "application/rss+xml": "https://jurekdev.qzz.io/feed.xml",
     },
   },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export const viewport: Viewport = {

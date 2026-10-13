@@ -18,11 +18,23 @@ export interface ProfileData {
   accentColor?: string;
 }
 
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  type: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  replied?: boolean;
+}
+
 export interface SiteData {
   posts: BlogPost[];
   projects: Project[];
   skills: TechItem[];
   profile: ProfileData;
+  messages?: ContactMessage[];
 }
 
 export const DEFAULT_PROFILE: ProfileData = {

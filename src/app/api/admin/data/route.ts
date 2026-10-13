@@ -26,11 +26,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!Array.isArray(body.skills)) {
-      body.skills = [];
-    }
+    const current = getSiteData();
+    const payload: SiteData = {
+      ...body,
+      messages: Array.isArray(body.messages) ? body.messages : (current.messages || []),
+    };
 
-    const success = saveSiteData(body);
+    const success = saveSiteData(payload);
     if (!success) {
       return NextResponse.json(
         { error: "Failed to persist data to server disk." },
