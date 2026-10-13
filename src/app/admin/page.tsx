@@ -451,12 +451,16 @@ export default function AdminPage() {
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
+    const cleanedMetrics = (editingProject.metrics || [])
+      .filter((m) => m && (m.label?.trim() || m.value?.trim()))
+      .map((m) => ({ label: m.label.trim(), value: m.value.trim() }));
     const updatedProject = {
       ...editingProject,
       id,
       slug: id,
       techStack: parsedTechStack,
       highlights: parsedHighlights,
+      metrics: cleanedMetrics,
     };
 
     let nextProjects: Project[];
@@ -1471,17 +1475,17 @@ export default function AdminPage() {
                       title: "",
                       tagline: "",
                       description: "",
-                      category: "systems",
-                      techStack: ["Go", "CLI"],
-                      githubUrl: `https://github.com/${profile.handle}/`,
+                      category: "fullstack",
+                      techStack: [],
+                      githubUrl: `https://github.com/${profile.handle || "jurek-zsl"}/`,
                       stars: 0,
                       forks: 0,
                       featured: false,
-                      highlights: ["Production-ready architecture"],
-                      metrics: [{ label: "Language", value: "Go" }],
+                      highlights: [],
+                      metrics: [{ label: "Language", value: "" }],
                     });
-                    setProjectTechStackInput("Go, CLI");
-                    setProjectHighlightsInput("Production-ready architecture");
+                    setProjectTechStackInput("");
+                    setProjectHighlightsInput("");
                     setIsCreatingProject(true);
                   }}
                   className="border border-[#38bdf8] bg-[#000000] px-3 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
@@ -1674,6 +1678,74 @@ export default function AdminPage() {
                     placeholder="Go, Raft, CLI, Distributed Systems"
                     className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
                   />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[#38bdf8] block font-bold">PROJECT METRICS / KEY SPECS (e.g. Language: TypeScript)</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = editingProject.metrics || [];
+                        setEditingProject({
+                          ...editingProject,
+                          metrics: [...current, { label: "Language", value: "" }],
+                        });
+                      }}
+                      className="border border-[#38bdf8] text-[#38bdf8] px-2 py-0.5 text-[11px] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
+                    >
+                      [+ ADD METRIC]
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[#e5e5e5]/60 mb-2">
+                    Key specs displayed on project cards &amp; modal (e.g. Label: &quot;Language&quot;, Value: &quot;TypeScript&quot;). Leave value blank or click [✕] to remove.
+                  </p>
+
+                  {(!editingProject.metrics || editingProject.metrics.length === 0) ? (
+                    <div className="border border-[#e5e5e5]/30 p-2 text-center text-[11px] text-[#e5e5e5]/50">
+                      No metrics specified. Click [+ ADD METRIC] to add specs like Language, Interface, or Runtime.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 border border-[#e5e5e5]/30 p-2.5">
+                      {editingProject.metrics.map((metric, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={metric.label}
+                            placeholder="Label (e.g. Language)"
+                            onChange={(e) => {
+                              const updated = [...(editingProject.metrics || [])];
+                              updated[idx] = { ...updated[idx], label: e.target.value };
+                              setEditingProject({ ...editingProject, metrics: updated });
+                            }}
+                            className="w-1/3 border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                          />
+                          <input
+                            type="text"
+                            value={metric.value}
+                            placeholder="Value (e.g. TypeScript, Next.js, Fastify)"
+                            onChange={(e) => {
+                              const updated = [...(editingProject.metrics || [])];
+                              updated[idx] = { ...updated[idx], value: e.target.value };
+                              setEditingProject({ ...editingProject, metrics: updated });
+                            }}
+                            className="flex-1 border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (editingProject.metrics || []).filter((_, i) => i !== idx);
+                              setEditingProject({ ...editingProject, metrics: updated });
+                            }}
+                            className="border border-red-500/60 px-2 py-1 text-[11px] text-red-400 hover:bg-red-500 hover:text-[#000000] cursor-pointer"
+                            title="Remove this metric"
+                          >
+                            [✕]
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>
