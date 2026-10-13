@@ -129,7 +129,7 @@ export function Hero() {
         </button>
 
         <a href="https://github.com/jurek-zsl" target="_blank" rel="noopener noreferrer">
-          <SpotlightButton variant="ghost" size="md">
+          <SpotlightButton variant="primary" size="md">
             4: GITHUB_PROFILE ↗
           </SpotlightButton>
         </a>
