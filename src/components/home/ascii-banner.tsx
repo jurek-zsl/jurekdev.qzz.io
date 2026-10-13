@@ -249,7 +249,7 @@ export function AsciiBanner({
 
       <span className="sr-only">JUREK</span>
       <pre
-        className="text-[var(--accent,#10b981)] text-[8px] sm:text-[10px] md:text-xs lg:text-sm tracking-normal leading-[1.12] select-none m-0 p-0 font-mono"
+        className="text-[var(--accent,#10b981)] text-[10px] sm:text-xs md:text-sm lg:text-base tracking-normal leading-[1.15] select-none m-0 p-0 font-mono"
         aria-hidden="true"
       >
         {lines.map((line, r) => (
