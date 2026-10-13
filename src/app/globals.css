@@ -12,6 +12,8 @@
   --background: #000000;
   --foreground: #e5e5e5;
   --accent: #38bdf8;
+  --accent-light: #0369a1;
+  --accent-contrast: #ffffff;
 }
 
 * {
@@ -73,6 +75,9 @@ html.light {
   color-scheme: light;
   background-color: #ffffff;
   color: #111827;
+  --color-term-bg: #ffffff;
+  --color-term-fg: #111827;
+  --color-term-accent: var(--accent-light, #000000);
 }
 
 html.light body {
@@ -131,16 +136,20 @@ html.light .hover\:bg-\[\#000000\]:hover {
   background-color: #ffffff !important;
 }
 
-html.light .hover\:text-\[\#000000\]:hover {
-  color: #ffffff !important;
-}
-
 html.light .tui-border {
   border-color: #111827 !important;
 }
 
+html.light .tui-border-green {
+  border-color: var(--accent-light, #000000) !important;
+}
+
 html.light ::-webkit-scrollbar-track {
   background: #f3f4f6;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: var(--accent-light, #000000);
 }
 
 html.light .text-\[\#e5e5e5\]\/60,
@@ -151,21 +160,6 @@ html.light .text-\[\#e5e5e5\]\/80 {
 
 html.light .placeholder\:text-\[\#e5e5e5\]\/50::placeholder {
   color: rgba(17, 24, 39, 0.4) !important;
-}
-
-html.light .bg-\[\#38bdf8\] {
-  background-color: var(--accent) !important;
-  color: #000000 !important;
-}
-
-html.light .hover\:bg-\[\#38bdf8\]:hover {
-  background-color: var(--accent) !important;
-  color: #000000 !important;
-}
-
-html.light [aria-selected="true"].aria-selected\:bg-\[\#38bdf8\] {
-  background-color: var(--accent) !important;
-  color: #000000 !important;
 }
 
 /* ========================================================
@@ -227,6 +221,77 @@ html.light [aria-selected="true"].aria-selected\:bg-\[\#38bdf8\] {
 [aria-selected="true"].aria-selected\:text-\[\#38bdf8\],
 [aria-selected="true"] .aria-selected\:text-\[\#38bdf8\] {
   color: var(--accent) !important;
+}
+
+/* ========================================================
+   LIGHT MODE ACCENT OVERRIDES (HIGH CONTRAST & VISIBILITY)
+   ======================================================== */
+html.light .text-\[\#38bdf8\] {
+  color: var(--accent-light, #000000) !important;
+}
+
+html.light .border-\[\#38bdf8\] {
+  border-color: var(--accent-light, #000000) !important;
+}
+
+html.light .accent-\[\#38bdf8\] {
+  accent-color: var(--accent-light, #000000) !important;
+}
+
+html.light .hover\:text-\[\#38bdf8\]:hover {
+  color: var(--accent-light, #000000) !important;
+}
+
+html.light .hover\:border-\[\#38bdf8\]:hover {
+  border-color: var(--accent-light, #000000) !important;
+}
+
+html.light .focus\:border-\[\#38bdf8\]:focus {
+  border-color: var(--accent-light, #000000) !important;
+}
+
+html.light .focus-visible\:border-\[\#38bdf8\]:focus-visible {
+  border-color: var(--accent-light, #000000) !important;
+}
+
+html.light .group:hover .group-hover\:text-\[\#38bdf8\] {
+  color: var(--accent-light, #000000) !important;
+}
+
+html.light .group:hover .group-hover\:border-\[\#38bdf8\] {
+  border-color: var(--accent-light, #000000) !important;
+}
+
+html.light [aria-selected="true"].aria-selected\:text-\[\#38bdf8\],
+html.light [aria-selected="true"] .aria-selected\:text-\[\#38bdf8\] {
+  color: var(--accent-light, #000000) !important;
+}
+
+/* Solid accent backgrounds & badges */
+html.light .bg-\[\#38bdf8\] {
+  background-color: var(--accent-light, #000000) !important;
+  color: var(--accent-contrast, #ffffff) !important;
+}
+
+html.light .hover\:bg-\[\#38bdf8\]:hover {
+  background-color: var(--accent-light, #000000) !important;
+  color: var(--accent-contrast, #ffffff) !important;
+}
+
+html.light .group:hover .group-hover\:bg-\[\#38bdf8\] {
+  background-color: var(--accent-light, #000000) !important;
+  color: var(--accent-contrast, #ffffff) !important;
+}
+
+html.light [aria-selected="true"].aria-selected\:bg-\[\#38bdf8\],
+html.light [aria-selected="true"] .aria-selected\:bg-\[\#38bdf8\] {
+  background-color: var(--accent-light, #000000) !important;
+  color: var(--accent-contrast, #ffffff) !important;
+}
+
+/* Solid hover action buttons */
+html.light .hover\:text-\[\#000000\]:hover {
+  color: var(--accent-contrast, #ffffff) !important;
 }
 
 /* ========================================================

@@ -6,6 +6,7 @@ import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { getSiteData } from "@/lib/store-server";
+import { getLightModeAccent, getContrastTextColor } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -77,12 +78,20 @@ export default function RootLayout({
 }) {
   const { profile } = getSiteData();
   const accentColor = profile?.accentColor || "#38bdf8";
+  const lightAccent = getLightModeAccent(accentColor);
+  const contrastText = getContrastTextColor(lightAccent);
 
   return (
     <html
       lang="en"
       className={`${geistMono.variable} h-full dark`}
-      style={{ "--accent": accentColor } as React.CSSProperties}
+      style={
+        {
+          "--accent": accentColor,
+          "--accent-light": lightAccent,
+          "--accent-contrast": contrastText,
+        } as React.CSSProperties
+      }
       suppressHydrationWarning
     >
       <head>
@@ -92,7 +101,30 @@ export default function RootLayout({
               try {
                 var savedAccent = localStorage.getItem("theme_accent");
                 if (savedAccent) {
+                  var hex = savedAccent.trim().toLowerCase();
+                  var presetMap = {
+                    "#ffffff": "#000000",
+                    "#38bdf8": "#0369a1",
+                    "#f59e0b": "#b45309",
+                    "#10b981": "#047857",
+                    "#06b6d4": "#0e7490",
+                    "#a855f7": "#7e22ce",
+                    "#84cc16": "#4d7c0f",
+                    "#f97316": "#c2410c",
+                    "#f43f5e": "#be123c"
+                  };
+                  var lightHex = presetMap[hex];
+                  if (!lightHex) {
+                    if (hex === "#fff" || hex === "#ffffff" || /^#f[0-9a-f]{5}$/.test(hex)) {
+                      lightHex = "#000000";
+                    } else {
+                      lightHex = hex;
+                    }
+                  }
+                  var contrastHex = (lightHex === "#ffffff" || lightHex === "#fff") ? "#000000" : "#ffffff";
                   document.documentElement.style.setProperty("--accent", savedAccent);
+                  document.documentElement.style.setProperty("--accent-light", lightHex);
+                  document.documentElement.style.setProperty("--accent-contrast", contrastHex);
                 }
                 var savedMode = localStorage.getItem("theme_mode");
                 if (savedMode === "light") {

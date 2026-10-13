@@ -1,3 +1,5 @@
+import { getLightModeAccent, getContrastTextColor } from "./theme";
+
 export type ThemeMode = "dark" | "light";
 
 export function getInitialThemeMode(): ThemeMode {
@@ -65,7 +67,16 @@ export function toggleThemeWithAnimation(
       document.documentElement.classList.remove("light");
       document.documentElement.classList.add("dark");
     }
+
     try {
+      const currentAccent =
+        document.documentElement.style.getPropertyValue("--accent") ||
+        localStorage.getItem("theme_accent") ||
+        "#38bdf8";
+      const lightAccent = getLightModeAccent(currentAccent);
+      const contrastText = getContrastTextColor(lightAccent);
+      document.documentElement.style.setProperty("--accent-light", lightAccent);
+      document.documentElement.style.setProperty("--accent-contrast", contrastText);
       localStorage.setItem("theme_mode", nextMode);
     } catch {
       // localStorage may fail in private mode

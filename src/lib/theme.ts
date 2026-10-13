@@ -74,6 +74,80 @@ export const ACCENT_PRESETS: AccentPreset[] = [
 
 export const DEFAULT_ACCENT = "#38bdf8";
 
+export function parseHex(hex: string): { r: number; g: number; b: number } | null {
+  let c = hex.replace(/^#/, "").trim();
+  if (c.length === 3) c = c.split("").map((x) => x + x).join("");
+  if (c.length !== 6) return null;
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return null;
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+export function getLuminance(r: number, g: number, b: number): number {
+  const toLinear = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+const PRESET_LIGHT_MAP: Record<string, string> = {
+  "#ffffff": "#000000",
+  "#38bdf8": "#0369a1",
+  "#f59e0b": "#b45309",
+  "#10b981": "#047857",
+  "#06b6d4": "#0e7490",
+  "#a855f7": "#7e22ce",
+  "#84cc16": "#4d7c0f",
+  "#f97316": "#c2410c",
+  "#f43f5e": "#be123c",
+};
+
+/**
+ * Calculates a high-contrast accent color suitable for light mode (white background #ffffff).
+ * If the accent color is white (#ffffff) or near-white (luminance > 0.75), it adapts to stark black (#000000)
+ * to maintain crisp typography, high readability, and clean box borders.
+ */
+export function getLightModeAccent(hex: string): string {
+  const normalized = hex.toLowerCase().trim();
+  if (PRESET_LIGHT_MAP[normalized]) return PRESET_LIGHT_MAP[normalized];
+
+  const rgb = parseHex(hex);
+  if (!rgb) return "#000000";
+
+  const lum = getLuminance(rgb.r, rgb.g, rgb.b);
+  // Pure white or near-white adapts to stark black ink in light mode
+  if (lum > 0.75 || (rgb.r > 235 && rgb.g > 235 && rgb.b > 235)) {
+    return "#000000";
+  }
+
+  // If contrast against white (#ffffff) is already >= 4.5:1 (luminance <= 0.183)
+  if (lum <= 0.183) {
+    return hex;
+  }
+
+  // Proportionally darken to guarantee >= 4.5:1 contrast on white paper background
+  let { r, g, b } = rgb;
+  for (let i = 0; i < 25; i++) {
+    r *= 0.88;
+    g *= 0.88;
+    b *= 0.88;
+    if (getLuminance(r, g, b) <= 0.183) break;
+  }
+  const pad = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  return `#${pad(r)}${pad(g)}${pad(b)}`;
+}
+
+/**
+ * Returns either #ffffff or #000000 for text displayed inside a solid accent background.
+ */
+export function getContrastTextColor(bgHex: string): string {
+  const rgb = parseHex(bgHex);
+  if (!rgb) return "#ffffff";
+  const lum = getLuminance(rgb.r, rgb.g, rgb.b);
+  return lum > 0.5 ? "#000000" : "#ffffff";
+}
+
 export function isValidHexColor(hex: string): boolean {
   return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex.trim());
 }
@@ -81,13 +155,23 @@ export function isValidHexColor(hex: string): boolean {
 export function applyAccentColor(hex: string) {
   if (typeof window === "undefined") return;
   const validHex = hex.trim();
+  const lightAccent = getLightModeAccent(validHex);
+  const contrastText = getContrastTextColor(lightAccent);
+
   document.documentElement.style.setProperty("--accent", validHex);
+  document.documentElement.style.setProperty("--accent-light", lightAccent);
+  document.documentElement.style.setProperty("--accent-contrast", contrastText);
+
   try {
     localStorage.setItem("theme_accent", validHex);
   } catch {
     // localStorage might be unavailable
   }
-  window.dispatchEvent(new CustomEvent("accent-color-change", { detail: { hex: validHex } }));
+  window.dispatchEvent(
+    new CustomEvent("accent-color-change", {
+      detail: { hex: validHex, lightAccent, contrastText },
+    })
+  );
 }
 
 export function getSavedAccentColor(): string | null {
@@ -104,11 +188,13 @@ export function getSavedAccentColor(): string | null {
  */
 function spawnPhosphorLaserRing(x: number, y: number, hex: string) {
   if (typeof document === "undefined") return;
+  const isLight = document.documentElement.classList.contains("light");
+  const effectiveColor = isLight ? getLightModeAccent(hex) : hex;
   const ring = document.createElement("div");
   ring.className = "terminal-theme-ripple";
   ring.style.left = `${x}px`;
   ring.style.top = `${y}px`;
-  ring.style.borderColor = hex;
+  ring.style.borderColor = effectiveColor;
   document.body.appendChild(ring);
   setTimeout(() => {
     ring.remove();
