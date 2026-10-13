@@ -129,11 +129,9 @@ export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
           </SpotlightButton>
         </Link>
 
-        <button onClick={handleCopyEmail}>
-          <SpotlightButton variant="secondary" size="md">
-            {copied ? "COPIED!" : "3: COPY_EMAIL"}
-          </SpotlightButton>
-        </button>
+        <SpotlightButton onClick={handleCopyEmail} variant="secondary" size="md">
+          {copied ? "COPIED!" : "3: COPY_EMAIL"}
+        </SpotlightButton>
 
         <a href="https://github.com/jurek-zsl" target="_blank" rel="noopener noreferrer">
           <SpotlightButton variant="primary" size="md">
