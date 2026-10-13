@@ -65,6 +65,6 @@ pnpm dev
 # Build production bundle (100% static HTML generation)
 pnpm build
 
-# Start production server
-pnpm start -p 3009
+# Start production server (runs on port 3011)
+pnpm start
 ```
