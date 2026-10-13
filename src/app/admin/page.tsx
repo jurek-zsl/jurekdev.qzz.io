@@ -8,8 +8,15 @@ import { Project, ProjectCategory } from "@/types/project";
 import { TechItem } from "@/data/tech-stack";
 import { ProfileData, SiteData } from "@/lib/store";
 import { SpotlightButton } from "@/components/ui/spotlight-button";
+import {
+  ACCENT_PRESETS,
+  DEFAULT_ACCENT,
+  isValidHexColor,
+  applyAccentColor,
+  getSavedAccentColor,
+} from "@/lib/theme";
 
-type AdminTab = "posts" | "projects" | "skills" | "profile" | "raw_json";
+type AdminTab = "posts" | "projects" | "skills" | "profile" | "theme" | "raw_json";
 
 const DEFAULT_AUTH_KEY = "jurek2026";
 
@@ -19,6 +26,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("posts");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [accentColorInput, setAccentColorInput] = useState<string>(DEFAULT_ACCENT);
 
   // Core editable datasets
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -35,6 +43,7 @@ export default function AdminPage() {
     flagships: "ohio-cli · antiQuarantine · openclock · MumbleMica",
     bio: "High-speed Go CLIs & TUIs, native macOS system tools, real-time LAN multiplayer games, browser extensions, desktop app mods, and pure monospace web apps.",
     email: "george@otcsoft.com",
+    accentColor: DEFAULT_ACCENT,
   });
 
   // Post Editor State
@@ -56,11 +65,16 @@ export default function AdminPage() {
   // Raw JSON Editor State
   const [rawJsonText, setRawJsonText] = useState("");
 
-  // Check existing session
+  // Check existing session & initialize accent
   useEffect(() => {
     const authSession = sessionStorage.getItem("jurekdev_admin_auth");
     if (authSession === "true") {
       setIsAuthenticated(true);
+    }
+    const saved = getSavedAccentColor();
+    if (saved) {
+      setAccentColorInput(saved);
+      applyAccentColor(saved);
     }
   }, []);
 
@@ -74,12 +88,35 @@ export default function AdminPage() {
       setPosts(data.posts || []);
       setProjects(data.projects || []);
       setSkills(data.skills || []);
-      if (data.profile) setProfile(data.profile);
+      if (data.profile) {
+        setProfile(data.profile);
+        const color = data.profile.accentColor || getSavedAccentColor() || DEFAULT_ACCENT;
+        setAccentColorInput(color);
+        applyAccentColor(color);
+      }
       setRawJsonText(JSON.stringify(data, null, 2));
     } catch (err) {
       toast.error("ERR: Failed to load site data from server");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectAccent = (hex: string, autoSave: boolean = false) => {
+    if (!isValidHexColor(hex)) {
+      toast.error("Invalid HEX color format (must be #RGB or #RRGGBB)");
+      return;
+    }
+    const cleanHex = hex.trim();
+    setAccentColorInput(cleanHex);
+    applyAccentColor(cleanHex);
+    const updatedProfile = { ...profile, accentColor: cleanHex };
+    setProfile(updatedProfile);
+    if (autoSave) {
+      handleSaveAll({ posts, projects, skills, profile: updatedProfile });
+      toast.success(`OK: Accent color set to ${cleanHex} and persisted to disk`);
+    } else {
+      toast.info(`LIVE PREVIEW: Accent set to ${cleanHex}. Click [SAVE ACCENT TO DISK] to persist.`);
     }
   };
 
@@ -412,14 +449,29 @@ export default function AdminPage() {
   return (
     <div className="py-8 font-mono text-[#e5e5e5] space-y-6">
       {/* Top Status Header */}
-      <div className="border border-[#e5e5e5] bg-[#000000] p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2">
+      <div className="border border-[#e5e5e5] bg-[#000000] p-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="bg-[#38bdf8] text-[#000000] px-1.5 py-0.5 font-bold">
             [ROOT@jurekdev.qzz.io]
           </span>
           <span className="text-[#38bdf8]">MODE: SYSTEM_ADMIN</span>
           <span>|</span>
           <span className="text-[#e5e5e5]">POSTS: {posts.length} · PROJ: {projects.length} · SKILLS: {skills.length}</span>
+          <span>|</span>
+          <div className="flex items-center gap-1.5 border border-[#e5e5e5] px-2 py-0.5">
+            <span className="text-[10px] text-[#e5e5e5]/70">ACCENT:</span>
+            <span
+              className="w-2.5 h-2.5 inline-block border border-[#e5e5e5]"
+              style={{ backgroundColor: accentColorInput }}
+            />
+            <span className="font-bold text-[#38bdf8]">{accentColorInput.toUpperCase()}</span>
+            <button
+              onClick={() => setActiveTab("theme")}
+              className="text-[10px] text-[#e5e5e5] hover:text-[#38bdf8] underline cursor-pointer ml-1"
+            >
+              [PALETTE]
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -492,6 +544,22 @@ export default function AdminPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab("theme")}
+          className={`px-3 py-1.5 border cursor-pointer font-bold flex items-center gap-1.5 ${
+            activeTab === "theme"
+              ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000]"
+              : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
+          }`}
+        >
+          <span>[05: ACCENT_THEME</span>
+          <span
+            className="w-2.5 h-2.5 inline-block border border-current"
+            style={{ backgroundColor: accentColorInput }}
+          />
+          <span>]</span>
+        </button>
+
+        <button
           onClick={() => {
             setActiveTab("raw_json");
             setRawJsonText(JSON.stringify({ posts, projects, skills, profile }, null, 2));
@@ -502,7 +570,7 @@ export default function AdminPage() {
               : "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:border-[#38bdf8]"
           }`}
         >
-          [05: RAW_JSON_DATABASE]
+          [06: RAW_JSON_DATABASE]
         </button>
       </div>
 
@@ -1434,6 +1502,31 @@ export default function AdminPage() {
             </div>
 
             <div>
+              <label className="text-[#38bdf8] block mb-1">ACCENT THEME COLOR (3RD PALETTE COLOR)</label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="color"
+                  value={accentColorInput}
+                  onChange={(e) => handleSelectAccent(e.target.value, false)}
+                  className="w-7 h-7 cursor-pointer border border-[#e5e5e5] bg-transparent p-0"
+                />
+                <input
+                  type="text"
+                  value={accentColorInput}
+                  onChange={(e) => handleSelectAccent(e.target.value, false)}
+                  className="w-32 border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8] uppercase font-bold"
+                />
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("theme")}
+                  className="border border-[#e5e5e5] px-2.5 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
+                >
+                  [OPEN FULL PALETTE MANAGER ↵]
+                </button>
+              </div>
+            </div>
+
+            <div>
               <label className="text-[#38bdf8] block mb-1">STATUS BADGE</label>
               <input
                 type="text"
@@ -1487,7 +1580,247 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================== */}
-      {/* TAB 5: RAW JSON DATABASE & BACKUP/RESTORE */}
+      {/* TAB 5: ACCENT COLOR THEME CONTROLLER */}
+      {/* ======================================================== */}
+      {!loading && activeTab === "theme" && (
+        <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-6">
+          <div className="border-b border-[#e5e5e5] pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#38bdf8]">
+                  === ACCENT COLOR MATRIX &amp; TUI PALETTE CONTROLLER ===
+                </span>
+                <span
+                  className="w-3.5 h-3.5 border border-[#e5e5e5] inline-block shrink-0"
+                  style={{ backgroundColor: accentColorInput }}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-[#e5e5e5]/80">
+                Instantly switch the third color in the strict 3-color palette (#000000 bg, #e5e5e5 text/structure, plus your accent color). Real-time CSS variable binding applies instantly across every page and persists directly to server storage.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleSelectAccent(DEFAULT_ACCENT, true)}
+                className="border border-[#e5e5e5] px-2.5 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+              >
+                [RESET DEFAULT SKY]
+              </button>
+              <button
+                onClick={() => handleSelectAccent(accentColorInput, true)}
+                disabled={saving}
+                className="border border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold px-3 py-1 text-xs hover:bg-[#000000] hover:text-[#38bdf8] cursor-pointer"
+              >
+                {saving ? "[SAVING...]" : "[SAVE ACCENT TO DISK ↵]"}
+              </button>
+            </div>
+          </div>
+
+          {/* Active Accent Telemetry & Custom Picker */}
+          <div className="border border-[#e5e5e5] p-3 bg-[#000000] space-y-3">
+            <div className="text-[11px] font-bold text-[#38bdf8]">
+              -- SECTION A: CUSTOM COLOR SELECTOR &amp; TELEMETRY --
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 border-2 border-[#e5e5e5] shrink-0 flex items-center justify-center text-xs font-bold shadow-inner"
+                  style={{ backgroundColor: accentColorInput }}
+                >
+                  <span className="bg-[#000000] text-[#e5e5e5] px-1 py-0.5 text-[9px] opacity-80">
+                    HEX
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-xs">
+                    ACTIVE_HEX: <span className="font-bold text-[#38bdf8]">{accentColorInput.toUpperCase()}</span>
+                  </div>
+                  <div className="text-[10px] text-[#e5e5e5]/70">
+                    STATUS: {ACCENT_PRESETS.find((p) => p.hex.toLowerCase() === accentColorInput.toLowerCase())?.name || "CUSTOM_USER_HEX"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Native picker + Hex Input */}
+              <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 sm:border-l sm:border-[#e5e5e5] sm:pl-4">
+                <label className="border border-[#e5e5e5] px-2.5 py-1.5 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer flex items-center gap-2">
+                  <span>[PICK COLOR]</span>
+                  <input
+                    type="color"
+                    value={accentColorInput}
+                    onChange={(e) => handleSelectAccent(e.target.value, false)}
+                    className="w-4 h-4 cursor-pointer bg-transparent border-0 p-0"
+                  />
+                </label>
+
+                <div className="flex items-center border border-[#e5e5e5] px-2 py-1 text-xs">
+                  <span className="text-[#38bdf8] mr-1">#</span>
+                  <input
+                    type="text"
+                    value={accentColorInput.replace(/^#/, "")}
+                    onChange={(e) => {
+                      const val = "#" + e.target.value.trim();
+                      setAccentColorInput(val);
+                      if (isValidHexColor(val)) {
+                        applyAccentColor(val);
+                        setProfile({ ...profile, accentColor: val });
+                      }
+                    }}
+                    placeholder="38bdf8"
+                    maxLength={6}
+                    className="w-20 bg-transparent text-xs text-[#e5e5e5] outline-none uppercase font-bold"
+                  />
+                  <button
+                    onClick={() => handleSelectAccent(accentColorInput, true)}
+                    className="ml-2 text-[10px] border border-[#38bdf8] px-1.5 py-0.5 text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000]"
+                  >
+                    [APPLY]
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Presets Grid */}
+          <div className="space-y-2">
+            <div className="text-[11px] font-bold text-[#38bdf8]">
+              -- SECTION B: CURATED TERMINAL PRESET PALETTES ({ACCENT_PRESETS.length}) --
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {ACCENT_PRESETS.map((preset) => {
+                const isActive = preset.hex.toLowerCase() === accentColorInput.toLowerCase();
+                return (
+                  <div
+                    key={preset.id}
+                    onClick={() => handleSelectAccent(preset.hex, false)}
+                    className={`border p-2.5 flex flex-col justify-between cursor-pointer transition-all ${
+                      isActive
+                        ? "border-[#38bdf8] bg-[#000000]"
+                        : "border-[#e5e5e5] bg-[#000000] hover:border-[#38bdf8]"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between pb-1.5 border-b border-[#e5e5e5]/40 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-3.5 h-3.5 inline-block border border-[#e5e5e5] shrink-0"
+                            style={{ backgroundColor: preset.hex }}
+                          />
+                          <span className="font-bold text-[#e5e5e5]">[{preset.asciiTag}]</span>
+                        </div>
+                        <span className="text-[10px] opacity-75">{preset.hex}</span>
+                      </div>
+
+                      <div className="mt-1.5 text-xs font-bold text-[#e5e5e5]">
+                        {preset.name}
+                      </div>
+                      <p className="mt-0.5 text-[10px] text-[#e5e5e5]/70 leading-tight">
+                        {preset.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-2.5 pt-1.5 border-t border-[#e5e5e5]/40 flex items-center justify-between text-[10px]">
+                      <span className={isActive ? "text-[#38bdf8] font-bold" : "text-[#e5e5e5]/50"}>
+                        {isActive ? "● CURRENT_ACTIVE" : "○ CLICK_TO_PREVIEW"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAccent(preset.hex, true);
+                        }}
+                        className={`px-1.5 py-0.5 border text-[10px] cursor-pointer ${
+                          isActive
+                            ? "border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold"
+                            : "border-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
+                        }`}
+                      >
+                        [SAVE ↵]
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Live Component Test Bench Preview */}
+          <div className="border border-[#e5e5e5] p-3 bg-[#000000] space-y-3">
+            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-[11px]">
+              <span className="font-bold text-[#38bdf8]">
+                -- SECTION C: LIVE COMPONENT TEST BENCH (REALTIME RENDER) --
+              </span>
+              <span className="text-[10px] text-[#e5e5e5]">COLOR: {accentColorInput}</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              {/* Box 1: Typography & Labels */}
+              <div className="border border-[#e5e5e5] p-2.5 space-y-2">
+                <div className="text-[10px] text-[#e5e5e5]/60">// TYPOGRAPHY ACCENT</div>
+                <div className="text-sm font-bold text-[#38bdf8]">
+                  === SECTION_HEADER ===
+                </div>
+                <div className="text-xs text-[#38bdf8]">
+                  // High-speed Go CLIs &amp; TUIs
+                </div>
+                <div className="text-[11px] text-[#e5e5e5]">
+                  Status telemetry: <span className="text-[#38bdf8] font-bold">● NOMINAL_200_OK</span>
+                </div>
+              </div>
+
+              {/* Box 2: Buttons & Interactive Elements */}
+              <div className="border border-[#e5e5e5] p-2.5 space-y-2">
+                <div className="text-[10px] text-[#e5e5e5]/60">// BUTTONS &amp; BADGES</div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-[#38bdf8] text-[#000000] px-1.5 py-0.5 font-bold text-[10px]">
+                    [SOLID BADGE]
+                  </span>
+                  <span className="border border-[#38bdf8] text-[#38bdf8] px-1.5 py-0.5 text-[10px]">
+                    [OUTLINE BADGE]
+                  </span>
+                </div>
+                <div className="pt-1 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="border border-[#38bdf8] bg-[#38bdf8] text-[#000000] font-bold px-2 py-0.5 text-[11px]"
+                  >
+                    [ACTION BTN]
+                  </button>
+                  <button
+                    type="button"
+                    className="border border-[#38bdf8] text-[#38bdf8] px-2 py-0.5 text-[11px] hover:bg-[#38bdf8] hover:text-[#000000]"
+                  >
+                    [HOVER ME]
+                  </button>
+                </div>
+              </div>
+
+              {/* Box 3: Terminal Prompt & Borders */}
+              <div className="border border-[#e5e5e5] p-2.5 space-y-2">
+                <div className="text-[10px] text-[#e5e5e5]/60">// TERMINAL STATUSLINE</div>
+                <div className="text-xs flex items-center gap-1.5">
+                  <span className="text-[#38bdf8]">┌─[</span>
+                  <span className="text-[#e5e5e5] font-bold">jurek@qzz.io</span>
+                  <span className="text-[#38bdf8]">]</span>
+                </div>
+                <div className="text-[11px] text-[#38bdf8]">
+                  └──&gt; 02:PROJECTS [8] · 03:ARTICLES [0]
+                </div>
+                <div className="border border-[#38bdf8] p-1 text-[10px] text-center text-[#38bdf8]">
+                  [ACCENT BORDER HIGHLIGHT]
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 6: RAW JSON DATABASE & BACKUP/RESTORE */}
       {/* ======================================================== */}
       {!loading && activeTab === "raw_json" && (
         <div className="border border-[#e5e5e5] p-4 bg-[#000000] space-y-4">

@@ -15,6 +15,7 @@ export interface ProfileData {
   flagships: string;
   bio: string;
   email: string;
+  accentColor?: string;
 }
 
 export interface SiteData {
@@ -35,4 +36,5 @@ export const DEFAULT_PROFILE: ProfileData = {
   flagships: "ohio-cli · antiQuarantine · openclock · MumbleMica",
   bio: "High-speed Go CLIs & TUIs, native macOS system tools, real-time LAN multiplayer games, browser extensions, desktop app mods, and pure monospace web apps.",
   email: "george@otcsoft.com",
+  accentColor: "#38bdf8",
 };

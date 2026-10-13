@@ -5,6 +5,7 @@ import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { getSiteData } from "@/lib/store-server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,11 +75,30 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { profile } = getSiteData();
+  const accentColor = profile?.accentColor || "#38bdf8";
+
   return (
     <html
       lang="en"
       className={`${geistMono.variable} h-full dark`}
+      style={{ "--accent": accentColor } as React.CSSProperties}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              try {
+                var saved = localStorage.getItem("theme_accent");
+                if (saved) {
+                  document.documentElement.style.setProperty("--accent", saved);
+                }
+              } catch(e) {}
+            })();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-[#000000] text-[#e5e5e5] font-mono antialiased relative">
         <SmoothScrollProvider>
           <Navbar />
