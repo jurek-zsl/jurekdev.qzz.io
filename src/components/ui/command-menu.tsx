@@ -96,6 +96,14 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
                   <span>&gt; 03: GOTO_BLOG [ /blog ]</span>
                   <span>[ENTER]</span>
                 </Command.Item>
+
+                <Command.Item
+                  onSelect={() => handleSelect(() => router.push("/admin"))}
+                  className="flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs text-[#e5e5e5] aria-selected:bg-[#38bdf8] aria-selected:text-[#000000]"
+                >
+                  <span>&gt; 04: GOTO_ADMIN [ /admin ]</span>
+                  <span className="text-[#38bdf8] font-bold">[ROOT]</span>
+                </Command.Item>
               </Command.Group>
 
               {/* Projects */}

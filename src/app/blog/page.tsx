@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   },
 };
 
+import { getSiteData } from "@/lib/store-server";
+
 export default function BlogIndexPage() {
-  return <BlogList />;
+  const { posts } = getSiteData();
+  return <BlogList initialPosts={posts} />;
 }

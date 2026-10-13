@@ -7,7 +7,11 @@ import { ProjectModal } from "@/components/ui/project-modal";
 import { PROJECTS } from "@/data/projects";
 import { Project, ProjectCategory } from "@/types/project";
 
-export function ProjectsClient() {
+interface ProjectsClientProps {
+  initialProjects?: Project[];
+}
+
+export function ProjectsClient({ initialProjects = PROJECTS }: ProjectsClientProps) {
   const searchParams = useSearchParams();
   const highlightParam = searchParams.get("highlight");
 
@@ -15,14 +19,16 @@ export function ProjectsClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
+  const allProjects = initialProjects;
+
   useEffect(() => {
     if (highlightParam) {
-      const match = PROJECTS.find((p) => p.id === highlightParam);
+      const match = allProjects.find((p) => p.id === highlightParam);
       if (match) {
         setSelectedProject(match);
       }
     }
-  }, [highlightParam]);
+  }, [highlightParam, allProjects]);
 
   const categories: { label: string; value: ProjectCategory }[] = [
     { label: "ALL", value: "all" },
@@ -33,7 +39,7 @@ export function ProjectsClient() {
   ];
 
   const filteredProjects = useMemo(() => {
-    return PROJECTS.filter((project) => {
+    return allProjects.filter((project) => {
       const matchesCategory =
         activeCategory === "all" || project.category === activeCategory;
 
@@ -47,7 +53,7 @@ export function ProjectsClient() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [allProjects, activeCategory, searchQuery]);
 
   return (
     <div className="py-8 font-mono text-[#e5e5e5]">
@@ -57,7 +63,7 @@ export function ProjectsClient() {
           === PROJECTS &amp; OPEN SOURCE ARCHIVES ===
         </h1>
         <p className="mt-1 text-xs text-[#e5e5e5]">
-          Total entries: {PROJECTS.length} · Go CLIs, macOS Darwin tools, multiplayer game engines, desktop mods, and browser extensions.
+          Total entries: {allProjects.length} · Go CLIs, macOS Darwin tools, multiplayer game engines, desktop mods, and browser extensions.
         </p>
       </div>
 

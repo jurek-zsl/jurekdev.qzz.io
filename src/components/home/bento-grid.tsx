@@ -7,13 +7,19 @@ import { PROJECTS } from "@/data/projects";
 import { TECH_STACK, TechCategory } from "@/data/tech-stack";
 import { GITHUB_STATS, REAL_CONTRIBUTIONS } from "@/data/github-matrix";
 import { Project } from "@/types/project";
+import { ProfileData, DEFAULT_PROFILE } from "@/lib/store";
 
-export function BentoGrid() {
+interface BentoGridProps {
+  projects?: Project[];
+  profile?: ProfileData;
+}
+
+export function BentoGrid({ projects = PROJECTS, profile = DEFAULT_PROFILE }: BentoGridProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedTechDomain, setSelectedTechDomain] = useState<string>("ALL");
   const [pinnedIndex, setPinnedIndex] = useState(0);
 
-  const pinnedProject = PROJECTS[pinnedIndex] || PROJECTS[0];
+  const pinnedProject = projects[pinnedIndex] || projects[0] || PROJECTS[0];
 
   // Group real 367 contributions into 53 weeks of 7 days
   const weeks = useMemo(() => {

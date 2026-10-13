@@ -80,6 +80,9 @@ export function Footer() {
             <Link href="/sitemap.xml" className="hover:text-[#38bdf8]">
               [SITEMAP]
             </Link>
+            <Link href="/admin" className="text-[#38bdf8] hover:underline font-bold">
+              [ADMIN]
+            </Link>
           </div>
         </div>
 

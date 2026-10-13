@@ -2,11 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
+import { BlogPost } from "@/types/blog";
 import { POSTS } from "@/data/posts";
 import { formatDate } from "@/lib/utils";
 
-export function LatestArticles() {
-  const latestPosts = POSTS.slice(0, 3);
+interface LatestArticlesProps {
+  posts?: BlogPost[];
+}
+
+export function LatestArticles({ posts = POSTS }: LatestArticlesProps) {
+  const latestPosts = posts.slice(0, 3);
 
   return (
     <section className="py-8 font-mono text-[#e5e5e5]">

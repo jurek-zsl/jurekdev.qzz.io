@@ -5,14 +5,25 @@ import Link from "next/link";
 import { POSTS } from "@/data/posts";
 import { formatDate } from "@/lib/utils";
 
-export function BlogList() {
+import { BlogPost } from "@/types/blog";
+
+interface BlogListProps {
+  initialPosts?: BlogPost[];
+}
+
+export function BlogList({ initialPosts = POSTS }: BlogListProps) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const categories = ["All", "Distributed Systems", "Linux & Kernel", "Web Architecture"];
+  const allPosts = initialPosts;
+
+  const categories = useMemo(() => {
+    const set = new Set(allPosts.map((p) => p.category));
+    return ["All", ...Array.from(set)];
+  }, [allPosts]);
 
   const filteredPosts = useMemo(() => {
-    return POSTS.filter((post) => {
+    return allPosts.filter((post) => {
       const matchesCategory =
         activeCategory === "All" ||
         post.category.toLowerCase() === activeCategory.toLowerCase();
@@ -22,7 +33,7 @@ export function BlogList() {
         !query ||
         post.title.toLowerCase().includes(query) ||
         post.description.toLowerCase().includes(query) ||
-        post.tags.some((tag) => tag.toLowerCase().includes(query));
+        post.tags?.some((tag) => tag.toLowerCase().includes(query));
 
       return matchesCategory && matchesSearch;
     });

@@ -7,9 +7,13 @@ import { ProjectModal } from "../ui/project-modal";
 import { PROJECTS } from "@/data/projects";
 import { Project } from "@/types/project";
 
-export function FeaturedProjects() {
+interface FeaturedProjectsProps {
+  projects?: Project[];
+}
+
+export function FeaturedProjects({ projects = PROJECTS }: FeaturedProjectsProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const featured = PROJECTS.filter((p) => p.featured);
+  const featured = projects.filter((p) => p.featured);
 
   return (
     <section className="py-8 font-mono text-[#e5e5e5]">

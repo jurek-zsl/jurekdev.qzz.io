@@ -15,34 +15,41 @@ const BANNERS = {
 / /_/ / / /_/ /  / _, _/ / /___ / /| |  
 \\____/  \\____/  /_/ |_| /_____//_/ |_|  
 `),
-  blocks: stripNewlines(`
-     ██  ██    ██  ██████   ███████  ██   ██
-     ██  ██    ██  ██   ██  ██       ██  ██ 
-     ██  ██    ██  ██████   █████    █████  
-██   ██  ██    ██  ██   ██  ██       ██  ██ 
- █████    ██████   ██   ██  ███████  ██   ██
+  subzero: stripNewlines(`
+   __     __  __     ______     ______     __  __    
+  /\\ \\   /\\ \\/\\ \\   /\\  == \\   /\\  ___\\   /\\ \\/ /    
+ _\\_\\ \\  \\ \\ \\_\\ \\  \\ \\  __<   \\ \\  __\\   \\ \\  _"-.  
+/\\_____\\  \\ \\_____\\  \\ \\_\\ \\_\\  \\ \\_____\\  \\ \\_\\ \\_\\ 
+\\/_____/   \\/_____/   \\/_/ /_/   \\/_____/   \\/_/\\/_/ 
 `),
-  doom: stripNewlines(`
-   ___ _   _ _____  _____ _   __
-  |_  | | | | ___ \\  ___| | / / 
-    | | | | | |_/ / |__ | |/ /  
-    | | | | |    /|  __||    \\  
-/\\__/ / |_| | |\\ \\| |___| |\\  \\ 
-\\____/ \\___/\\_| \\_\\____/\\_| \\_/ 
+  graffiti: stripNewlines(`
+     ____.____ ____________________________  __.
+    |    |    |   \\______   \\_   _____/    |/ _|
+    |    |    |   /|       _/|    __)_|      <  
+/\\__|    |    |  / |    |   \\|        \\    |  \\ 
+\\________|______/  |____|_  /_______  /____|__ \\
+                          \\/        \\/        \\/
 `),
-  standard: stripNewlines(`
-     _ _   _  ____   _____ _  __
-    | | | | | |  _ \\ | ____| |/ /
- _  | | | | | | |_) ||  _| | ' / 
-| |_| | |_| | |  _ < | |___| . \\ 
- \\___/ \\___/  |_| \\_\\|_____|_|\\_\\
+  starwars: stripNewlines(`
+       __   __    __  .______       _______  __  ___ 
+      |  | |  |  |  | |   _  \\     |   ____||  |/  / 
+      |  | |  |  |  | |  |_)  |    |  |__   |  '  /  
+.--.  |  | |  |  |  | |      /     |   __|  |    <   
+|  \`--'  | |  \`--'  | |  |\\  \\----.|  |____ |  .  \\  
+ \\______/   \\______/  | _| \`._____||_______||__|\\__\\ 
 `),
 };
 
-const BANNER_KEYS = ["slant", "blocks", "doom", "standard"] as const;
+const BANNER_KEYS = ["slant", "subzero", "graffiti", "starwars"] as const;
 type BannerKey = typeof BANNER_KEYS[number];
 
-export function Hero() {
+import { ProfileData, DEFAULT_PROFILE } from "@/lib/store";
+
+interface HeroProps {
+  profile?: ProfileData;
+}
+
+export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
   const [copied, setCopied] = useState(false);
   const [bannerStyle, setBannerStyle] = useState<BannerKey>("slant");
 
@@ -53,10 +60,10 @@ export function Hero() {
 
   const handleCopyEmail = async () => {
     try {
-      await navigator.clipboard.writeText("jurek@jurekdev.qzz.io");
+      await navigator.clipboard.writeText(profile.email || "jurek@jurekdev.qzz.io");
       setCopied(true);
       toast.success("OK: Copied email address", {
-        description: "jurek@jurekdev.qzz.io",
+        description: profile.email || "jurek@jurekdev.qzz.io",
       });
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -84,7 +91,7 @@ export function Hero() {
       </pre>
 
       <div className="mt-4 border-b border-[#e5e5e5] pb-2 text-xs flex items-center justify-between">
-        <span className="text-[#38bdf8]">SYS_ID: JUREK_ZSL // DOMAIN: jurekdev.qzz.io</span>
+        <span className="text-[#38bdf8]">SYS_ID: JUREK_ZSL // DOMAIN: {profile.host}</span>
         <span className="text-[#e5e5e5]">[VER 1.0.0]</span>
       </div>
 
@@ -92,18 +99,18 @@ export function Hero() {
       <div className="mt-6 border border-[#e5e5e5] bg-[#000000] p-4 text-xs space-y-2">
         <div className="text-[#38bdf8] font-bold pb-2 border-b border-[#e5e5e5] flex justify-between">
           <span>--- SYSTEM DIAGNOSTICS &amp; PROFILE ---</span>
-          <span className="text-[#e5e5e5]">LOC: Málaga, Spain</span>
+          <span className="text-[#e5e5e5]">LOC: {profile.location}</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 pt-1">
-          <div><span className="text-[#38bdf8]">USER:</span> Lishafai Heorhii (Jurek)</div>
-          <div><span className="text-[#38bdf8]">HOST:</span> jurekdev.qzz.io</div>
-          <div><span className="text-[#38bdf8]">ROLE:</span> Systems · Game Dev · Extensions · Desktop Mods</div>
-          <div><span className="text-[#38bdf8]">ECOSYSTEM:</span> ohiofiles.cloud · Homebrew · Jellyfin</div>
-          <div><span className="text-[#38bdf8]">FLAGSHIPS:</span> ohio-cli · antiQuarantine · openclock · MumbleMica</div>
-          <div><span className="text-[#38bdf8]">STATUS:</span> <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">AVAILABLE FOR PROJECTS</span></div>
+          <div><span className="text-[#38bdf8]">USER:</span> {profile.name}</div>
+          <div><span className="text-[#38bdf8]">HOST:</span> {profile.host}</div>
+          <div><span className="text-[#38bdf8]">ROLE:</span> {profile.role}</div>
+          <div><span className="text-[#38bdf8]">ECOSYSTEM:</span> {profile.ecosystem}</div>
+          <div><span className="text-[#38bdf8]">FLAGSHIPS:</span> {profile.flagships}</div>
+          <div><span className="text-[#38bdf8]">STATUS:</span> <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">{profile.status}</span></div>
         </div>
         <div className="pt-2 border-t border-[#e5e5e5] text-xs leading-relaxed">
-          &gt; High-speed Go CLIs &amp; TUIs, native macOS system tools, real-time LAN multiplayer games, browser extensions, desktop app mods, and pure monospace web apps.
+          &gt; {profile.bio}
         </div>
       </div>
 

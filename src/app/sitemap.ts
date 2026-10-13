@@ -1,9 +1,9 @@
 import { MetadataRoute } from "next";
-import { POSTS } from "@/data/posts";
-import { PROJECTS } from "@/data/projects";
+import { getSiteData } from "@/lib/store-server";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://jurekdev.qzz.io";
+  const { posts } = getSiteData();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -26,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const blogRoutes: MetadataRoute.Sitemap = POSTS.map((post) => ({
+  const blogRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: new Date(post.publishedAt),
     changeFrequency: "monthly",

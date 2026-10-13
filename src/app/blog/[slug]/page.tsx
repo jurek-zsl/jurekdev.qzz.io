@@ -11,19 +11,25 @@ import { TableOfContents } from "@/components/blog/table-of-contents";
 import { ReadingProgress } from "@/components/blog/reading-progress";
 import { ShareButton } from "@/components/blog/share-button";
 
+import { getSiteData } from "@/lib/store-server";
+
+export const dynamicParams = true;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  return POSTS.map((post) => ({
+  const { posts } = getSiteData();
+  return posts.map((post) => ({
     slug: post.slug,
   }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = POSTS.find((p) => p.slug === slug);
+  const { posts } = getSiteData();
+  const post = posts.find((p) => p.slug === slug);
 
   if (!post) {
     return { title: "Article Not Found | Jurek" };
@@ -54,7 +60,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = POSTS.find((p) => p.slug === slug);
+  const { posts } = getSiteData();
+  const post = posts.find((p) => p.slug === slug);
 
   if (!post) {
     notFound();
@@ -62,9 +69,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   const blocks = await parseMarkdownToBlocks(post.content);
 
-  const currentIndex = POSTS.findIndex((p) => p.slug === slug);
-  const prevPost = currentIndex > 0 ? POSTS[currentIndex - 1] : null;
-  const nextPost = currentIndex < POSTS.length - 1 ? POSTS[currentIndex + 1] : null;
+  const currentIndex = posts.findIndex((p) => p.slug === slug);
+  const prevPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
+  const nextPost = currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null;
 
   return (
     <>

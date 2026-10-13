@@ -1,9 +1,10 @@
-import { POSTS } from "@/data/posts";
+import { getSiteData } from "@/lib/store-server";
 
 export async function GET() {
   const baseUrl = "https://jurekdev.qzz.io";
+  const { posts } = getSiteData();
 
-  const rssItems = POSTS.map((post) => {
+  const rssItems = posts.map((post) => {
     return `
     <item>
       <title><![CDATA[${post.title}]]></title>
