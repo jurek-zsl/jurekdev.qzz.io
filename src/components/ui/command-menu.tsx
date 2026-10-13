@@ -58,6 +58,13 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
 
   const handleSelect = (callback: () => void) => {
     onOpenChange(false);
+    if (typeof document !== "undefined") {
+      document.body.removeAttribute("data-scroll-locked");
+      document.documentElement.removeAttribute("data-scroll-locked");
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.style.pointerEvents = "";
+    }
     callback();
   };
 

@@ -26,6 +26,7 @@ html {
   background-color: #000000;
   color: #e5e5e5;
   font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  scroll-behavior: smooth;
 }
 
 body {

@@ -93,7 +93,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistMono.variable} h-full dark`}
+      className={`${geistMono.variable} dark`}
       style={
         {
           "--accent": accentColor,
@@ -125,7 +125,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[#000000] text-[#e5e5e5] font-mono antialiased relative">
+      <body className="min-h-screen flex flex-col bg-[#000000] text-[#e5e5e5] font-mono antialiased relative">
         <SmoothScrollProvider>
           <Navbar />
           <main className="flex-1 mx-auto max-w-5xl px-3 sm:px-6 w-full">
