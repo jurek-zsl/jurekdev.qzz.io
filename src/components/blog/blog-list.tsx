@@ -11,7 +11,7 @@ interface BlogListProps {
   initialPosts?: BlogPost[];
 }
 
-export function BlogList({ initialPosts = POSTS }: BlogListProps) {
+export function BlogList({ initialPosts = [] }: BlogListProps) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -37,7 +37,7 @@ export function BlogList({ initialPosts = POSTS }: BlogListProps) {
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, allPosts]);
 
   return (
     <div className="py-8 font-mono text-[#e5e5e5]">
@@ -103,7 +103,22 @@ export function BlogList({ initialPosts = POSTS }: BlogListProps) {
       </div>
 
       {/* Posts List */}
-      {filteredPosts.length === 0 ? (
+      {allPosts.length === 0 ? (
+        <div className="border border-[#e5e5e5] p-8 text-center text-xs">
+          <div className="text-[#38bdf8] font-bold">[00: NO_ARTICLES_IN_DATABASE]</div>
+          <p className="mt-2 text-[#e5e5e5]">
+            No technical articles or research notes have been published yet.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/admin"
+              className="border border-[#38bdf8] px-3 py-1.5 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000]"
+            >
+              [OPEN ADMIN TO PUBLISH ↵]
+            </Link>
+          </div>
+        </div>
+      ) : filteredPosts.length === 0 ? (
         <div className="border border-[#e5e5e5] p-8 text-center text-xs">
           <div className="text-[#38bdf8]">[0 ENTRIES MATCHED]</div>
           <div className="mt-1 text-[#e5e5e5]">

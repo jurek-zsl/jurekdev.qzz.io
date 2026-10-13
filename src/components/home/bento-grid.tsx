@@ -24,7 +24,7 @@ export function BentoGrid({
   const [selectedTechDomain, setSelectedTechDomain] = useState<string>("ALL");
   const [pinnedIndex, setPinnedIndex] = useState(0);
 
-  const pinnedProject = projects[pinnedIndex] || projects[0] || PROJECTS[0];
+  const pinnedProject = projects[pinnedIndex] || projects[0] || null;
 
   // Group real 367 contributions into 53 weeks of 7 days
   const weeks = useMemo(() => {
@@ -77,75 +77,84 @@ export function BentoGrid({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Pane 1: Pinned Project Spotlight */}
         <GlassCard className="p-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
-              <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">
-                PANE 01: PINNED_ENGINE
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[#38bdf8]">
-                  {pinnedProject.stars !== undefined && `STARS: ${pinnedProject.stars} ★`}
-                </span>
-                <button
-                  onClick={() =>
-                    setPinnedIndex((prev) => (prev + 1) % Math.min(3, PROJECTS.length))
-                  }
-                  className="text-[10px] border border-[#e5e5e5] px-1 text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
-                  title="Switch spotlight project"
-                >
-                  [CYCLE ⟳]
-                </button>
-              </div>
+          {!pinnedProject ? (
+            <div className="py-12 text-center text-xs space-y-2">
+              <div className="text-[#38bdf8] font-bold">[00: NO_PROJECTS_REGISTERED]</div>
+              <p className="text-[#e5e5e5]">No active projects found in database.</p>
             </div>
-
-            <div className="mt-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-[#e5e5e5]">
-                  {pinnedProject.title}
-                </h3>
-                <span className="text-[10px] border border-[#38bdf8] px-1 text-[#38bdf8]">
-                  [{pinnedProject.category.toUpperCase()}]
-                </span>
-              </div>
-              <div className="text-xs text-[#38bdf8] mt-0.5">
-                // {pinnedProject.tagline}
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-[#e5e5e5]">
-                {pinnedProject.description}
-              </p>
-            </div>
-
-            {/* Metrics */}
-            <div className="mt-4 border border-[#e5e5e5] p-2 text-xs grid grid-cols-2 gap-2">
-              {pinnedProject.metrics?.map((m, idx) => (
-                <div key={idx}>
-                  <span className="text-[#38bdf8]">{m.label}:</span> {m.value}
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
+                  <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">
+                    PANE 01: PINNED_ENGINE
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#38bdf8]">
+                      {pinnedProject.stars !== undefined && `STARS: ${pinnedProject.stars} ★`}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setPinnedIndex((prev) => (prev + 1) % (projects.length || 1))
+                      }
+                      className="text-[10px] border border-[#e5e5e5] px-1 text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
+                      title="Switch spotlight project"
+                    >
+                      [CYCLE ⟳]
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-[#e5e5e5] flex items-center justify-between text-xs">
-            <span className="text-xs text-[#38bdf8]">
-              [{pinnedProject.techStack.slice(0, 3).join(" · ")}]
-            </span>
-            <div className="flex items-center gap-2">
-              <a
-                href={pinnedProject.githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border border-[#e5e5e5] px-2 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
-              >
-                [REPO ↗]
-              </a>
-              <button
-                onClick={() => setSelectedProject(pinnedProject)}
-                className="border border-[#38bdf8] bg-[#000000] px-2 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
-              >
-                [ARCHITECTURE ↗]
-              </button>
-            </div>
-          </div>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-[#e5e5e5]">
+                      {pinnedProject.title}
+                    </h3>
+                    <span className="text-[10px] border border-[#38bdf8] px-1 text-[#38bdf8]">
+                      [{pinnedProject.category.toUpperCase()}]
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#38bdf8] mt-0.5">
+                    // {pinnedProject.tagline}
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-[#e5e5e5]">
+                    {pinnedProject.description}
+                  </p>
+                </div>
+
+                {/* Metrics */}
+                <div className="mt-4 border border-[#e5e5e5] p-2 text-xs grid grid-cols-2 gap-2">
+                  {pinnedProject.metrics?.map((m, idx) => (
+                    <div key={idx}>
+                      <span className="text-[#38bdf8]">{m.label}:</span> {m.value}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#e5e5e5] flex items-center justify-between text-xs">
+                <span className="text-xs text-[#38bdf8]">
+                  [{pinnedProject.techStack.slice(0, 3).join(" · ")}]
+                </span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={pinnedProject.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border border-[#e5e5e5] px-2 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8]"
+                  >
+                    [REPO ↗]
+                  </a>
+                  <button
+                    onClick={() => setSelectedProject(pinnedProject)}
+                    className="border border-[#38bdf8] bg-[#000000] px-2 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
+                  >
+                    [ARCHITECTURE ↗]
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </GlassCard>
 
         {/* Pane 2: Real GitHub Activity Heatmap */}
@@ -245,27 +254,36 @@ export function BentoGrid({
               ))}
             </div>
 
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              {filteredTech.slice(0, 6).map((tech) => (
-                <div
-                  key={tech.name}
-                  className="border border-[#e5e5e5] p-2 flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#e5e5e5] font-bold">{tech.name}</span>
-                    <span className="text-[#38bdf8] text-[10px]">[{tech.proficiency}]</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-[#e5e5e5]/80 line-clamp-2">
-                    {tech.description}
-                  </p>
-                  {tech.tag && (
-                    <div className="mt-1 text-[9px] text-[#38bdf8]">
-                      &gt; {tech.tag}
+            {filteredTech.length === 0 ? (
+              <div className="mt-3 border border-[#e5e5e5] p-6 text-center text-xs">
+                <span className="text-[#38bdf8] font-bold">[00: NO_SKILLS_RECORDED]</span>
+                <p className="mt-1 text-[11px] text-[#e5e5e5]/80">
+                  No skills in this category. Skills can be configured via /admin.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {filteredTech.slice(0, 6).map((tech) => (
+                  <div
+                    key={tech.name}
+                    className="border border-[#e5e5e5] p-2 flex flex-col justify-between"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#e5e5e5] font-bold">{tech.name}</span>
+                      <span className="text-[#38bdf8] text-[10px]">[{tech.proficiency}]</span>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                    <p className="mt-1 text-[11px] text-[#e5e5e5]/80 line-clamp-2">
+                      {tech.description}
+                    </p>
+                    {tech.tag && (
+                      <div className="mt-1 text-[9px] text-[#38bdf8]">
+                        &gt; {tech.tag}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="mt-4 pt-3 border-t border-[#e5e5e5] text-xs flex justify-between text-[#e5e5e5]">

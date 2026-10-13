@@ -17,6 +17,32 @@ interface CommandMenuProps {
 export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [menuData, setMenuData] = useState<{
+    projects: typeof PROJECTS;
+    posts: typeof POSTS;
+    email: string;
+  }>({
+    projects: PROJECTS,
+    posts: [],
+    email: "george@otcsoft.com",
+  });
+
+  useEffect(() => {
+    if (open) {
+      fetch("/api/admin/data")
+        .then((res) => res.json())
+        .then((resData) => {
+          if (resData) {
+            setMenuData({
+              projects: Array.isArray(resData.projects) ? resData.projects : PROJECTS,
+              posts: Array.isArray(resData.posts) ? resData.posts : [],
+              email: resData.profile?.email || "george@otcsoft.com",
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [open]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -35,8 +61,8 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
   };
 
   const copyEmail = () => {
-    navigator.clipboard.writeText("jurek@jurekdev.qzz.io");
-    toast.success("OK: Copied jurek@jurekdev.qzz.io");
+    navigator.clipboard.writeText(menuData.email);
+    toast.success(`OK: Copied ${menuData.email}`);
   };
 
   return (
@@ -111,7 +137,7 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
                 heading="=== PROJECTS ==="
                 className="mt-2 px-2 py-1 text-[11px] font-bold text-[#38bdf8]"
               >
-                {PROJECTS.map((project) => (
+                {menuData.projects.map((project) => (
                   <Command.Item
                     key={project.id}
                     value={`${project.title} ${project.category} ${project.techStack.join(" ")}`}
@@ -124,23 +150,25 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
                 ))}
               </Command.Group>
 
-              {/* Articles */}
-              <Command.Group
-                heading="=== ARTICLES ==="
-                className="mt-2 px-2 py-1 text-[11px] font-bold text-[#38bdf8]"
-              >
-                {POSTS.map((post) => (
-                  <Command.Item
-                    key={post.slug}
-                    value={`${post.title} ${post.category}`}
-                    onSelect={() => handleSelect(() => router.push(`/blog/${post.slug}`))}
-                    className="flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs text-[#e5e5e5] aria-selected:bg-[#38bdf8] aria-selected:text-[#000000]"
-                  >
-                    <span className="line-clamp-1">&gt; {post.title}</span>
-                    <span className="text-[10px] shrink-0">[{post.readingTime}]</span>
-                  </Command.Item>
-                ))}
-              </Command.Group>
+              {/* Articles (Only shown if posts exist) */}
+              {menuData.posts.length > 0 && (
+                <Command.Group
+                  heading="=== ARTICLES ==="
+                  className="mt-2 px-2 py-1 text-[11px] font-bold text-[#38bdf8]"
+                >
+                  {menuData.posts.map((post) => (
+                    <Command.Item
+                      key={post.slug}
+                      value={`${post.title} ${post.category}`}
+                      onSelect={() => handleSelect(() => router.push(`/blog/${post.slug}`))}
+                      className="flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs text-[#e5e5e5] aria-selected:bg-[#38bdf8] aria-selected:text-[#000000]"
+                    >
+                      <span className="line-clamp-1">&gt; {post.title}</span>
+                      <span className="text-[10px] shrink-0">[{post.readingTime}]</span>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
 
               {/* Actions */}
               <Command.Group
@@ -161,7 +189,7 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
                   onSelect={() => handleSelect(copyEmail)}
                   className="flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs text-[#e5e5e5] aria-selected:bg-[#38bdf8] aria-selected:text-[#000000]"
                 >
-                  <span>&gt; COPY_EMAIL [jurek@jurekdev.qzz.io]</span>
+                  <span>&gt; COPY_EMAIL [{menuData.email}]</span>
                   <span>[COPY]</span>
                 </Command.Item>
 

@@ -60,10 +60,10 @@ export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
 
   const handleCopyEmail = async () => {
     try {
-      await navigator.clipboard.writeText(profile.email || "jurek@jurekdev.qzz.io");
+      await navigator.clipboard.writeText(profile.email || "george@otcsoft.com");
       setCopied(true);
       toast.success("OK: Copied email address", {
-        description: profile.email || "jurek@jurekdev.qzz.io",
+        description: profile.email || "george@otcsoft.com",
       });
       setTimeout(() => setCopied(false), 2000);
     } catch {

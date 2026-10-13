@@ -4,14 +4,13 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { GlassCard } from "@/components/ui/glass-card";
 import { ProjectModal } from "@/components/ui/project-modal";
-import { PROJECTS } from "@/data/projects";
 import { Project, ProjectCategory } from "@/types/project";
 
 interface ProjectsClientProps {
   initialProjects?: Project[];
 }
 
-export function ProjectsClient({ initialProjects = PROJECTS }: ProjectsClientProps) {
+export function ProjectsClient({ initialProjects = [] }: ProjectsClientProps) {
   const searchParams = useSearchParams();
   const highlightParam = searchParams.get("highlight");
 
@@ -108,7 +107,17 @@ export function ProjectsClient({ initialProjects = PROJECTS }: ProjectsClientPro
       </div>
 
       {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
+      {allProjects.length === 0 ? (
+        <div className="border border-[#e5e5e5] p-8 text-center text-xs">
+          <div className="text-[#38bdf8] font-bold">[00: NO_PROJECTS_RECORDED]</div>
+          <div className="mt-1 text-[#e5e5e5]">
+            No projects found in database. Projects can be authored and added via{" "}
+            <a href="/admin" className="text-[#38bdf8] underline hover:text-[#e5e5e5]">
+              [ADMIN]
+            </a>.
+          </div>
+        </div>
+      ) : filteredProjects.length === 0 ? (
         <div className="border border-[#e5e5e5] p-8 text-center text-xs">
           <div className="text-[#38bdf8]">[NO MATCHES FOUND]</div>
           <div className="mt-1 text-[#e5e5e5]">

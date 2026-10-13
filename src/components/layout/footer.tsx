@@ -6,8 +6,16 @@ import { DigitalPlatBadge } from "@/components/ui/digitalplat-badge";
 
 export function Footer() {
   const [currentTime, setCurrentTime] = useState<string>("");
+  const [email, setEmail] = useState("george@otcsoft.com");
 
   useEffect(() => {
+    fetch("/api/admin/data")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.profile?.email) setEmail(data.profile.email);
+      })
+      .catch(() => {});
+
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
@@ -71,7 +79,7 @@ export function Footer() {
             >
               [GITHUB ↗]
             </a>
-            <a href="mailto:jurek@jurekdev.qzz.io" className="hover:text-[#38bdf8]">
+            <a href={`mailto:${email}`} className="hover:text-[#38bdf8]">
               [EMAIL]
             </a>
             <a href="/feed.xml" target="_blank" className="hover:text-[#38bdf8]">

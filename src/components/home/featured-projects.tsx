@@ -4,14 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { GlassCard } from "../ui/glass-card";
 import { ProjectModal } from "../ui/project-modal";
-import { PROJECTS } from "@/data/projects";
 import { Project } from "@/types/project";
 
 interface FeaturedProjectsProps {
   projects?: Project[];
 }
 
-export function FeaturedProjects({ projects = PROJECTS }: FeaturedProjectsProps) {
+export function FeaturedProjects({ projects = [] }: FeaturedProjectsProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const featured = projects.filter((p) => p.featured);
 
@@ -31,18 +30,29 @@ export function FeaturedProjects({ projects = PROJECTS }: FeaturedProjectsProps)
           href="/projects"
           className="border border-[#e5e5e5] px-2.5 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] self-start sm:self-auto"
         >
-          [VIEW ALL {PROJECTS.length} PROJECTS ↗]
+          [VIEW ALL {projects.length} PROJECTS ↗]
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {featured.map((project) => (
-          <GlassCard
-            key={project.id}
-            className="flex flex-col justify-between p-4"
-          >
-            <div>
-              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
+      {featured.length === 0 ? (
+        <div className="border border-[#e5e5e5] bg-[#000000] p-6 text-center text-xs text-[#e5e5e5]">
+          <div className="text-[#38bdf8] font-bold">[00: NO_FEATURED_PROJECTS]</div>
+          <p className="mt-1 opacity-80">
+            No projects are currently marked as featured. Spotlight projects can be toggled via{" "}
+            <Link href="/admin" className="text-[#38bdf8] underline hover:text-[#e5e5e5]">
+              [ADMIN]
+            </Link>.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {featured.map((project) => (
+            <GlassCard
+              key={project.id}
+              className="flex flex-col justify-between p-4"
+            >
+              <div>
+                <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
                 <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">
                   {project.category.toUpperCase()}
                 </span>
@@ -112,6 +122,7 @@ export function FeaturedProjects({ projects = PROJECTS }: FeaturedProjectsProps)
           </GlassCard>
         ))}
       </div>
+      )}
 
       <ProjectModal
         project={selectedProject}

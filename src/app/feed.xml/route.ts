@@ -2,7 +2,8 @@ import { getSiteData } from "@/lib/store-server";
 
 export async function GET() {
   const baseUrl = "https://jurekdev.qzz.io";
-  const { posts } = getSiteData();
+  const { posts, profile } = getSiteData();
+  const authorEmail = profile?.email || "george@otcsoft.com";
 
   const rssItems = posts.map((post) => {
     return `
@@ -12,7 +13,7 @@ export async function GET() {
       <guid isPermaLink="true">${baseUrl}/blog/${post.slug}</guid>
       <description><![CDATA[${post.description}]]></description>
       <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>
-      <author><![CDATA[jurek@jurekdev.qzz.io (${post.author.name})]]></author>
+      <author><![CDATA[${authorEmail} (${post.author.name})]]></author>
       <category><![CDATA[${post.category}]]></category>
     </item>`;
   }).join("\n");

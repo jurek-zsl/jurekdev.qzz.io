@@ -17,6 +17,18 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [receiverEmail, setReceiverEmail] = useState("george@otcsoft.com");
+
+  React.useEffect(() => {
+    if (open) {
+      fetch("/api/admin/data")
+        .then((res) => res.json())
+        .then((d) => {
+          if (d?.profile?.email) setReceiverEmail(d.profile.email);
+        })
+        .catch(() => {});
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +43,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
     setSubmitted(true);
 
     toast.success("OK: Message transmitted", {
-      description: `Receiver: jurek@jurekdev.qzz.io · Sender: ${email}`,
+      description: `Receiver: ${receiverEmail} · Sender: ${email}`,
     });
 
     setTimeout(() => {
@@ -64,7 +76,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
           {submitted ? (
             <div className="py-8 text-center text-xs space-y-2">
               <div className="text-[#38bdf8] font-bold">[STATUS: BUFFER_SENT_200_OK]</div>
-              <p>Message delivered to jurek@jurekdev.qzz.io</p>
+              <p>Message delivered to {receiverEmail}</p>
               <p className="text-[11px] text-[#38bdf8]">ACK received.</p>
             </div>
           ) : (
@@ -136,7 +148,7 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
 
               <div className="pt-2 flex items-center justify-between border-t border-[#e5e5e5]">
                 <span className="text-[10px] text-[#e5e5e5]">
-                  DST: jurek@jurekdev.qzz.io
+                  DST: {receiverEmail}
                 </span>
 
                 <SpotlightButton

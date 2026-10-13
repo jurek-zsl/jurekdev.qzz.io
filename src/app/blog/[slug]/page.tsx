@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { POSTS } from "@/data/posts";
 import { parseMarkdownToBlocks } from "@/lib/markdown";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
-  const { posts } = getSiteData();
+  const { posts, profile } = getSiteData();
   const post = posts.find((p) => p.slug === slug);
 
   if (!post) {
@@ -188,10 +187,10 @@ export default async function BlogPostPage({ params }: PageProps) {
                   [GITHUB: @jurek-zsl ↗]
                 </a>
                 <a
-                  href="mailto:jurek@jurekdev.qzz.io"
+                  href={`mailto:${profile?.email || "george@otcsoft.com"}`}
                   className="text-[#e5e5e5] hover:text-[#38bdf8]"
                 >
-                  [EMAIL: jurek@jurekdev.qzz.io]
+                  [EMAIL: {profile?.email || "george@otcsoft.com"}]
                 </a>
               </div>
             </div>
