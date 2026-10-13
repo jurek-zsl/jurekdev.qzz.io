@@ -5,17 +5,51 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { SpotlightButton } from "../ui/spotlight-button";
 
-const ASCII_BANNER = `
-     ██╗██╗   ██╗██████╗ ███████╗██╗  ██╗
-     ██║██║   ██║██╔══██╗██╔════╝██║ ██╔╝
-     ██║██║   ██║██████╔╝█████╗  █████╔╝ 
-██   ██║██║   ██║██╔══██╗██╔══╝  ██╔═██╗ 
-╚█████╔╝╚██████╔╝██║  ██║███████╗██║  ██╗
- ╚════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-`.trim();
+const stripNewlines = (str: string) => str.replace(/^\n+|\n+$/g, "");
+
+const BANNERS = {
+  slant: stripNewlines(`
+       __  __  __   ____    ______ __ __
+      / / / / / /  / __ \\  / ____// //_/
+ __  / / / / / /  / /_/ / / __/  / ,<   
+/ /_/ / / /_/ /  / _, _/ / /___ / /| |  
+\\____/  \\____/  /_/ |_| /_____//_/ |_|  
+`),
+  blocks: stripNewlines(`
+     ██  ██    ██  ██████   ███████  ██   ██
+     ██  ██    ██  ██   ██  ██       ██  ██ 
+     ██  ██    ██  ██████   █████    █████  
+██   ██  ██    ██  ██   ██  ██       ██  ██ 
+ █████    ██████   ██   ██  ███████  ██   ██
+`),
+  doom: stripNewlines(`
+   ___ _   _ _____  _____ _   __
+  |_  | | | | ___ \\  ___| | / / 
+    | | | | | |_/ / |__ | |/ /  
+    | | | | |    /|  __||    \\  
+/\\__/ / |_| | |\\ \\| |___| |\\  \\ 
+\\____/ \\___/\\_| \\_\\____/\\_| \\_/ 
+`),
+  standard: stripNewlines(`
+     _ _   _  ____   _____ _  __
+    | | | | | |  _ \\ | ____| |/ /
+ _  | | | | | | |_) ||  _| | ' / 
+| |_| | |_| | |  _ < | |___| . \\ 
+ \\___/ \\___/  |_| \\_\\|_____|_|\\_\\
+`),
+};
+
+const BANNER_KEYS = ["slant", "blocks", "doom", "standard"] as const;
+type BannerKey = typeof BANNER_KEYS[number];
 
 export function Hero() {
   const [copied, setCopied] = useState(false);
+  const [bannerStyle, setBannerStyle] = useState<BannerKey>("slant");
+
+  const cycleBanner = () => {
+    const nextIndex = (BANNER_KEYS.indexOf(bannerStyle) + 1) % BANNER_KEYS.length;
+    setBannerStyle(BANNER_KEYS[nextIndex]);
+  };
 
   const handleCopyEmail = async () => {
     try {
@@ -32,9 +66,21 @@ export function Hero() {
 
   return (
     <section className="pt-8 pb-12 font-mono text-[#e5e5e5]">
+      {/* ASCII Art Title Header */}
+      <div className="flex items-center justify-between pb-1 text-xs">
+        <span className="text-[10px] text-[#e5e5e5]/60 select-none">// HERO_IDENTITY_BANNER</span>
+        <button
+          onClick={cycleBanner}
+          className="text-[10px] border border-[#e5e5e5] px-1.5 py-0.5 text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+          title="Cycle ASCII banner typography"
+        >
+          [FONT: {bannerStyle.toUpperCase()} ⟳]
+        </button>
+      </div>
+
       {/* ASCII Art Title */}
-      <pre className="text-[#38bdf8] text-[10px] sm:text-xs leading-none select-none overflow-x-auto py-2">
-        {ASCII_BANNER}
+      <pre className="text-[#38bdf8] text-[10px] sm:text-xs md:text-sm leading-snug tracking-normal select-none overflow-x-auto py-2 font-mono">
+        {BANNERS[bannerStyle]}
       </pre>
 
       <div className="mt-4 border-b border-[#e5e5e5] pb-2 text-xs flex items-center justify-between">

@@ -52,7 +52,9 @@ body {
 }
 
 pre, code, kbd {
-  font-family: var(--font-geist-mono), ui-monospace, monospace !important;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-ligatures: none !important;
+  font-feature-settings: "liga" 0, "calt" 0, "dlig" 0 !important;
 }
 
 /* TUI Box border helper */
