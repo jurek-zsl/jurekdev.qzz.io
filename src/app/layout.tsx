@@ -106,33 +106,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
               try {
-                var savedAccent = localStorage.getItem("theme_accent");
-                if (savedAccent) {
-                  var hex = savedAccent.trim().toLowerCase();
-                  var presetMap = {
-                    "#ffffff": "#000000",
-                    "#38bdf8": "#0369a1",
-                    "#f59e0b": "#b45309",
-                    "#10b981": "#047857",
-                    "#06b6d4": "#0e7490",
-                    "#a855f7": "#7e22ce",
-                    "#84cc16": "#4d7c0f",
-                    "#f97316": "#c2410c",
-                    "#f43f5e": "#be123c"
-                  };
-                  var lightHex = presetMap[hex];
-                  if (!lightHex) {
-                    if (hex === "#fff" || hex === "#ffffff" || /^#f[0-9a-f]{5}$/.test(hex)) {
-                      lightHex = "#000000";
-                    } else {
-                      lightHex = hex;
-                    }
-                  }
-                  var contrastHex = (lightHex === "#ffffff" || lightHex === "#fff") ? "#000000" : "#ffffff";
-                  document.documentElement.style.setProperty("--accent", savedAccent);
-                  document.documentElement.style.setProperty("--accent-light", lightHex);
-                  document.documentElement.style.setProperty("--accent-contrast", contrastHex);
-                }
+                // Clear any legacy client-side accent overrides so all users
+                // strictly inherit the site author's canonical server accent color
+                localStorage.removeItem("theme_accent");
+
                 var savedMode = localStorage.getItem("theme_mode");
                 if (savedMode === "light") {
                   document.documentElement.classList.remove("dark");

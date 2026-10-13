@@ -84,11 +84,6 @@ export default function AdminPage() {
   // Check server-side HTTP-only session on mount
   useEffect(() => {
     checkServerAuth();
-    const saved = getSavedAccentColor();
-    if (saved) {
-      setAccentColorInput(saved);
-      applyAccentColor(saved);
-    }
   }, []);
 
   const checkServerAuth = async () => {
@@ -130,7 +125,7 @@ export default function AdminPage() {
       }
       if (data.profile) {
         setProfile(data.profile);
-        const color = data.profile.accentColor || getSavedAccentColor() || DEFAULT_ACCENT;
+        const color = data.profile.accentColor || DEFAULT_ACCENT;
         setAccentColorInput(color);
         applyAccentColor(color);
       }
@@ -2296,7 +2291,7 @@ export default function AdminPage() {
                 return (
                   <div
                     key={preset.id}
-                    onClick={() => handleSelectAccent(preset.hex, false)}
+                    onClick={() => handleSelectAccent(preset.hex, true)}
                     className={`border p-2.5 flex flex-col justify-between cursor-pointer transition-all ${
                       isActive
                         ? "border-[#38bdf8] bg-[#000000]"

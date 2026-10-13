@@ -72,7 +72,7 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   },
 ];
 
-export const DEFAULT_ACCENT = "#38bdf8";
+export const DEFAULT_ACCENT = "#10b981";
 
 export function parseHex(hex: string): { r: number; g: number; b: number } | null {
   let c = hex.replace(/^#/, "").trim();
@@ -163,7 +163,7 @@ export function applyAccentColor(hex: string) {
   document.documentElement.style.setProperty("--accent-contrast", contrastText);
 
   try {
-    localStorage.setItem("theme_accent", validHex);
+    localStorage.removeItem("theme_accent");
   } catch {
     // localStorage might be unavailable
   }
@@ -176,11 +176,8 @@ export function applyAccentColor(hex: string) {
 
 export function getSavedAccentColor(): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem("theme_accent");
-  } catch {
-    return null;
-  }
+  const current = document.documentElement.style.getPropertyValue("--accent");
+  return current ? current.trim() : null;
 }
 
 /**

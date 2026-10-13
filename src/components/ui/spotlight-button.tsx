@@ -23,13 +23,13 @@ export const SpotlightButton = React.forwardRef<HTMLButtonElement, SpotlightButt
 
     const variantStyles = {
       primary:
-        "border-[#38bdf8] bg-[#000000] text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000]",
+        "border-[var(--accent)] bg-[#000000] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#000000]",
       secondary:
         "border-[#e5e5e5] bg-[#000000] text-[#e5e5e5] hover:bg-[#e5e5e5] hover:text-[#000000]",
       cyan:
-        "border-[#38bdf8] bg-[#38bdf8] text-[#000000] hover:bg-[#000000] hover:text-[#38bdf8]",
+        "border-[var(--accent)] bg-[var(--accent)] text-[#000000] hover:bg-[#000000] hover:text-[var(--accent)]",
       ghost:
-        "border-transparent bg-transparent text-[#e5e5e5] hover:text-[#38bdf8] hover:border-[#38bdf8]",
+        "border-transparent bg-transparent text-[#e5e5e5] hover:text-[var(--accent)] hover:border-[var(--accent)]",
     };
 
     return (

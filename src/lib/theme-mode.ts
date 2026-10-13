@@ -71,8 +71,7 @@ export function toggleThemeWithAnimation(
     try {
       const currentAccent =
         document.documentElement.style.getPropertyValue("--accent") ||
-        localStorage.getItem("theme_accent") ||
-        "#38bdf8";
+        "#10b981";
       const lightAccent = getLightModeAccent(currentAccent);
       const contrastText = getContrastTextColor(lightAccent);
       document.documentElement.style.setProperty("--accent-light", lightAccent);
