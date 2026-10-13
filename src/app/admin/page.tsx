@@ -66,10 +66,13 @@ export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [postPreviewMode, setPostPreviewMode] = useState(false);
+  const [postTagsInput, setPostTagsInput] = useState("");
 
   // Project Editor State
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [projectTechStackInput, setProjectTechStackInput] = useState("");
+  const [projectHighlightsInput, setProjectHighlightsInput] = useState("");
 
   // Dev Stack / Skills Editor State
   const [editingSkill, setEditingSkill] = useState<TechItem | null>(null);
@@ -403,7 +406,11 @@ export default function AdminPage() {
       return;
     }
     const slug = editingPost.slug.trim() || editingPost.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const updatedPost = { ...editingPost, slug };
+    const parsedTags = postTagsInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const updatedPost = { ...editingPost, slug, tags: parsedTags };
 
     let nextPosts: BlogPost[];
     if (isCreatingPost) {
@@ -436,7 +443,21 @@ export default function AdminPage() {
       return;
     }
     const id = editingProject.id.trim() || editingProject.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const updatedProject = { ...editingProject, id, slug: id };
+    const parsedTechStack = projectTechStackInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const parsedHighlights = projectHighlightsInput
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const updatedProject = {
+      ...editingProject,
+      id,
+      slug: id,
+      techStack: parsedTechStack,
+      highlights: parsedHighlights,
+    };
 
     let nextProjects: Project[];
     if (isCreatingProject) {
@@ -1200,6 +1221,7 @@ export default function AdminPage() {
                       content: "## Overview\n\nWrite article content here...",
                       toc: [],
                     });
+                    setPostTagsInput("Go, Systems");
                     setIsCreatingPost(true);
                   }}
                   className="border border-[#38bdf8] bg-[#000000] px-3 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
@@ -1234,6 +1256,7 @@ export default function AdminPage() {
                       <button
                         onClick={() => {
                           setEditingPost({ ...post });
+                          setPostTagsInput(post.tags?.join(", ") || "");
                           setIsCreatingPost(false);
                         }}
                         className="border border-[#38bdf8] px-2 py-0.5 text-[11px] text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
@@ -1344,13 +1367,8 @@ export default function AdminPage() {
                     <label className="text-[#38bdf8] block mb-1">TAGS (COMMA-SEPARATED)</label>
                     <input
                       type="text"
-                      value={editingPost.tags?.join(", ") || ""}
-                      onChange={(e) =>
-                        setEditingPost({
-                          ...editingPost,
-                          tags: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                        })
-                      }
+                      value={postTagsInput}
+                      onChange={(e) => setPostTagsInput(e.target.value)}
                       className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
                       placeholder="Go, Raft, Systems, Performance"
                     />
@@ -1462,6 +1480,8 @@ export default function AdminPage() {
                       highlights: ["Production-ready architecture"],
                       metrics: [{ label: "Language", value: "Go" }],
                     });
+                    setProjectTechStackInput("Go, CLI");
+                    setProjectHighlightsInput("Production-ready architecture");
                     setIsCreatingProject(true);
                   }}
                   className="border border-[#38bdf8] bg-[#000000] px-3 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
@@ -1511,6 +1531,8 @@ export default function AdminPage() {
                       <button
                         onClick={() => {
                           setEditingProject({ ...proj });
+                          setProjectTechStackInput(proj.techStack?.join(", ") || "");
+                          setProjectHighlightsInput(proj.highlights?.join("\n") || "");
                           setIsCreatingProject(false);
                         }}
                         className="border border-[#38bdf8] px-2 py-0.5 text-[11px] text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
@@ -1647,13 +1669,9 @@ export default function AdminPage() {
                   <label className="text-[#38bdf8] block mb-1">TECH STACK (COMMA-SEPARATED)</label>
                   <input
                     type="text"
-                    value={editingProject.techStack.join(", ")}
-                    onChange={(e) =>
-                      setEditingProject({
-                        ...editingProject,
-                        techStack: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                      })
-                    }
+                    value={projectTechStackInput}
+                    onChange={(e) => setProjectTechStackInput(e.target.value)}
+                    placeholder="Go, Raft, CLI, Distributed Systems"
                     className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
                   />
                 </div>
@@ -1671,13 +1689,9 @@ export default function AdminPage() {
                 <div>
                   <label className="text-[#38bdf8] block mb-1">HIGHLIGHTS (ONE PER LINE)</label>
                   <textarea
-                    value={editingProject.highlights.join("\n")}
-                    onChange={(e) =>
-                      setEditingProject({
-                        ...editingProject,
-                        highlights: e.target.value.split("\n").filter(Boolean),
-                      })
-                    }
+                    value={projectHighlightsInput}
+                    onChange={(e) => setProjectHighlightsInput(e.target.value)}
+                    placeholder="Production-ready architecture&#10;Sub-millisecond latency"
                     rows={3}
                     className="w-full border border-[#e5e5e5] bg-[#000000] p-1.5 text-xs text-[#e5e5e5] outline-none focus:border-[#38bdf8]"
                   />
