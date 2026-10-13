@@ -42,7 +42,7 @@ const BANNERS = {
 `),
 };
 
-const BANNER_KEYS = ["slant", "subzero", "graffiti", "starwars"] as const;
+const BANNER_KEYS = ["starwars", "slant", "subzero", "graffiti"] as const;
 type BannerKey = typeof BANNER_KEYS[number];
 
 interface HeroProps {
@@ -51,7 +51,7 @@ interface HeroProps {
 
 export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
   const [copied, setCopied] = useState(false);
-  const [bannerStyle, setBannerStyle] = useState<BannerKey>("slant");
+  const [bannerStyle, setBannerStyle] = useState<BannerKey>("starwars");
   const [windMode, setWindMode] = useState<WindMode>("calm");
 
   const cycleBanner = () => {
