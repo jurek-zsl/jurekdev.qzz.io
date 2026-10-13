@@ -20,44 +20,72 @@ interface CharNodeInfo {
 }
 
 /**
- * Pure ASCII glyph wave morphing.
- * Morphs directional characters with the wind phase:
- *  - Vertical grass stems: | <-> / <-> \
+ * Multi-stage smooth ASCII glyph wave morphing.
+ * High-resolution directional characters cycle smoothly with the wind wave:
+ *  - Vertical grass stems: | <-> / <-> ) (blowing right) and | <-> \ <-> ( (swaying left)
  *  - Slanted stalks: / <-> |, \ <-> |
- *  - Grass tops / flat bars: _ <-> ~, - <-> ~, = <-> ~
- * Ground/bottom row stays 100% anchored so the baseline is solid and readable.
- * Absolutely zero CSS transforms, rotation, or geometric curvature.
+ *  - Continuous 4-stage bar elevation: _ <-> - <-> ~ <-> ^
+ *  - Structural elements: : <-> /, ( <-> |, ) <-> |
+ * Only the very bottom root row stays 100% anchored for baseline stability.
+ * Zero CSS transforms, rotation, or geometric curvature.
  */
 function getMorphedChar(origChar: string, heightFrac: number, eff: number): string {
-  // Ground row and lower stalks stay anchored for baseline stability
-  if (heightFrac < 0.25) return origChar;
+  // Only the bottom root row stays anchored
+  if (heightFrac < 0.12) return origChar;
 
   const totalEff = heightFrac * eff;
 
   if (origChar === "|") {
-    if (totalEff > 0.35) return "/";
-    if (totalEff < -0.35) return "\\";
+    if (totalEff > 0.45) return ")";
+    if (totalEff > 0.18) return "/";
+    if (totalEff < -0.45) return "(";
+    if (totalEff < -0.18) return "\\";
     return "|";
   }
   if (origChar === "/") {
-    if (totalEff < -0.45) return "|";
+    if (totalEff < -0.4) return "\\";
+    if (totalEff < -0.15) return "|";
+    if (totalEff > 0.45) return ")";
     return "/";
   }
   if (origChar === "\\") {
-    if (totalEff > 0.45) return "|";
+    if (totalEff > 0.4) return "/";
+    if (totalEff > 0.15) return "|";
+    if (totalEff < -0.45) return "(";
     return "\\";
   }
   if (origChar === "_") {
-    if (totalEff > 0.38) return "~";
+    if (totalEff > 0.48) return "^";
+    if (totalEff > 0.28) return "~";
+    if (totalEff > 0.14) return "-";
     return "_";
   }
   if (origChar === "-") {
-    if (totalEff > 0.35) return "~";
-    if (totalEff < -0.35) return "_";
+    if (totalEff > 0.38) return "^";
+    if (totalEff > 0.18) return "~";
+    if (totalEff < -0.18) return "_";
     return "-";
   }
+  if (origChar === "~") {
+    if (totalEff > 0.35) return "^";
+    if (totalEff < -0.2) return "-";
+    return "~";
+  }
+  if (origChar === ":") {
+    if (totalEff > 0.22) return "/";
+    if (totalEff < -0.22) return "\\";
+    return ":";
+  }
+  if (origChar === "(") {
+    if (totalEff > 0.25) return "|";
+    return "(";
+  }
+  if (origChar === ")") {
+    if (totalEff < -0.25) return "|";
+    return ")";
+  }
   if (origChar === "=") {
-    if (totalEff > 0.4) return "~";
+    if (totalEff > 0.3) return "~";
     return "=";
   }
   return origChar;
@@ -125,8 +153,9 @@ export function AsciiBanner({
     }
 
     const startTime = performance.now();
-    const speedMult = windMode === "gust" ? 1.4 : 0.85;
-    const ampMult = windMode === "gust" ? 1.35 : 1.0;
+    // Brisk, lively wind speed with rich momentum
+    const speedMult = windMode === "gust" ? 2.5 : 1.75;
+    const ampMult = windMode === "gust" ? 1.4 : 1.0;
 
     const tick = (now: number) => {
       const elapsed = ((now - startTime) / 1000) * speedMult;
@@ -135,12 +164,12 @@ export function AsciiBanner({
       for (let i = 0; i < charNodesRef.current.length; i++) {
         const node = charNodesRef.current[i];
 
-        // Primary rolling breeze swell (long wavelength ~55 cols)
-        const phase1 = elapsed * 1.25 - node.c * 0.1;
+        // Primary rolling breeze swell (sweeps smoothly across columns)
+        const phase1 = elapsed * 2.2 - node.c * 0.14;
         const wave1 = Math.sin(phase1);
 
         // Secondary subtle harmonic breeze
-        const phase2 = elapsed * 0.65 - node.c * 0.05 + 1.2;
+        const phase2 = elapsed * 1.15 - node.c * 0.07 + 1.2;
         const wave2 = Math.sin(phase2);
 
         // Combined wind force
@@ -149,11 +178,11 @@ export function AsciiBanner({
         // Interactive "hand brushing through grass" deflection
         if (hoverCol !== null && interactive) {
           const dist = node.c - hoverCol;
-          const radius = 6;
+          const radius = 8;
           if (Math.abs(dist) <= radius && dist !== 0) {
             const factor = Math.cos((Math.abs(dist) / radius) * (Math.PI / 2));
             const dir = Math.sign(dist);
-            eff += dir * factor * 0.9;
+            eff += dir * factor * 1.1;
           }
         }
 
@@ -180,7 +209,8 @@ export function AsciiBanner({
   const registerChar = useCallback(
     (el: HTMLSpanElement | null, r: number, c: number, ch: string) => {
       if (!el) return;
-      const heightFrac = Math.pow((rowsCount - 1 - r) / Math.max(rowsCount - 1, 1), 1.35);
+      // Gentle linear height gradient: wind propagates deeply down through ~85% of character height
+      const heightFrac = Math.pow((rowsCount - 1 - r) / Math.max(rowsCount - 1, 1), 1.05);
       charNodesRef.current.push({
         el,
         r,
@@ -219,7 +249,7 @@ export function AsciiBanner({
 
       <span className="sr-only">JUREK</span>
       <pre
-        className="text-[var(--accent,#10b981)] text-[10px] sm:text-xs md:text-sm tracking-normal leading-[1.15] select-none m-0 p-0 font-mono"
+        className="text-[var(--accent,#10b981)] text-[8px] sm:text-[10px] md:text-xs lg:text-sm tracking-normal leading-[1.12] select-none m-0 p-0 font-mono"
         aria-hidden="true"
       >
         {lines.map((line, r) => (
