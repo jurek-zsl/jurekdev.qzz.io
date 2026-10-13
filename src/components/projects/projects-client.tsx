@@ -39,16 +39,22 @@ export function ProjectsClient({ initialProjects = [] }: ProjectsClientProps) {
 
   const filteredProjects = useMemo(() => {
     return allProjects.filter((project) => {
+      const projCat = project.category || "all";
       const matchesCategory =
-        activeCategory === "all" || project.category === activeCategory;
+        activeCategory === "all" || projCat === activeCategory;
 
       const query = searchQuery.toLowerCase().trim();
+      const title = project.title || "";
+      const tagline = project.tagline || "";
+      const desc = project.description || "";
+      const techStack = Array.isArray(project.techStack) ? project.techStack : [];
+
       const matchesSearch =
         !query ||
-        project.title.toLowerCase().includes(query) ||
-        project.tagline.toLowerCase().includes(query) ||
-        project.description.toLowerCase().includes(query) ||
-        project.techStack.some((tech) => tech.toLowerCase().includes(query));
+        title.toLowerCase().includes(query) ||
+        tagline.toLowerCase().includes(query) ||
+        desc.toLowerCase().includes(query) ||
+        techStack.some((tech) => typeof tech === "string" && tech.toLowerCase().includes(query));
 
       return matchesCategory && matchesSearch;
     });
@@ -143,7 +149,7 @@ export function ProjectsClient({ initialProjects = [] }: ProjectsClientProps) {
               <div>
                 <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
                   <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">
-                    {project.category.toUpperCase()}
+                    {(project.category || "project").toUpperCase()}
                   </span>
                   {project.stars && (
                     <span className="text-[#38bdf8]">★ {project.stars}</span>
@@ -162,7 +168,7 @@ export function ProjectsClient({ initialProjects = [] }: ProjectsClientProps) {
                 </p>
 
                 {/* Metrics */}
-                {project.metrics && project.metrics.length > 0 && (
+                {project.metrics && Array.isArray(project.metrics) && project.metrics.length > 0 && (
                   <div className="mt-3 border border-[#e5e5e5] p-2 text-xs grid grid-cols-2 gap-1">
                     {project.metrics.slice(0, 2).map((m, idx) => (
                       <div key={idx} className="line-clamp-1">
@@ -175,7 +181,7 @@ export function ProjectsClient({ initialProjects = [] }: ProjectsClientProps) {
 
               <div className="mt-4 pt-3 border-t border-[#e5e5e5] space-y-2">
                 <div className="flex flex-wrap gap-1 text-[11px] text-[#38bdf8] min-h-[1.5rem]">
-                  {project.techStack.map((tech) => (
+                  {(project.techStack || []).map((tech) => (
                     <span key={tech}>[{tech}]</span>
                   ))}
                 </div>

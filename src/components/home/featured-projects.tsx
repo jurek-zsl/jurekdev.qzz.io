@@ -54,7 +54,7 @@ export function FeaturedProjects({ projects = [] }: FeaturedProjectsProps) {
               <div>
                 <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2 text-xs">
                 <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">
-                  {project.category.toUpperCase()}
+                  {(project.category || "project").toUpperCase()}
                 </span>
                 {project.stars && (
                   <span className="text-[#38bdf8]">★ {project.stars}</span>
@@ -73,7 +73,7 @@ export function FeaturedProjects({ projects = [] }: FeaturedProjectsProps) {
               </p>
 
               <div className="mt-3 space-y-1 text-[11px] border-t border-[#e5e5e5]/40 pt-2">
-                {project.highlights.slice(0, 2).map((highlight, idx) => (
+                {(project.highlights || []).slice(0, 2).map((highlight, idx) => (
                   <div key={idx} className="line-clamp-1">
                     <span className="text-[#38bdf8]">&gt;</span> {highlight}
                   </div>
@@ -83,7 +83,7 @@ export function FeaturedProjects({ projects = [] }: FeaturedProjectsProps) {
 
             <div className="mt-4 pt-3 border-t border-[#e5e5e5] space-y-2">
               <div className="flex flex-wrap gap-1 text-[11px] text-[#38bdf8] min-h-[1.5rem]">
-                {project.techStack.slice(0, 3).map((tech) => (
+                {(project.techStack || []).slice(0, 3).map((tech) => (
                   <span key={tech}>[{tech}]</span>
                 ))}
               </div>

@@ -111,7 +111,7 @@ export function BentoGrid({
                       {pinnedProject.title}
                     </h3>
                     <span className="text-[10px] border border-[#38bdf8] px-1 text-[#38bdf8]">
-                      [{pinnedProject.category.toUpperCase()}]
+                      [{(pinnedProject.category || "project").toUpperCase()}]
                     </span>
                   </div>
                   <div className="text-xs text-[#38bdf8] mt-0.5">
@@ -134,7 +134,7 @@ export function BentoGrid({
 
               <div className="mt-4 pt-3 border-t border-[#e5e5e5] flex items-center justify-between text-xs">
                 <span className="text-xs text-[#38bdf8]">
-                  [{pinnedProject.techStack.slice(0, 3).join(" · ")}]
+                  [{((pinnedProject.techStack || []).slice(0, 3)).join(" · ")}]
                 </span>
                 <div className="flex items-center gap-2">
                   <a

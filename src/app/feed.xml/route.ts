@@ -1,5 +1,7 @@
 import { getSiteData } from "@/lib/store-server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const baseUrl = "https://jurekdev.qzz.io";
   const { posts, profile } = getSiteData();

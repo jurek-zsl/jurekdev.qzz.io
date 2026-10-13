@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSiteData, saveSiteData } from "@/lib/store-server";
 import { SiteData } from "@/lib/store-types";
 import { isAuthenticatedRequest } from "@/lib/auth-server";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const data = getSiteData();
@@ -38,6 +41,15 @@ export async function POST(request: Request) {
         { error: "Failed to persist data to server disk." },
         { status: 500 }
       );
+    }
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/");
+      revalidatePath("/projects");
+      revalidatePath("/blog");
+    } catch (revalError) {
+      console.error("Path revalidation error:", revalError);
     }
 
     return NextResponse.json({ ok: true, message: "Site data saved successfully." });

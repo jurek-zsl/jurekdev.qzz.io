@@ -141,11 +141,11 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
                 {menuData.projects.map((project) => (
                   <Command.Item
                     key={project.id}
-                    value={`${project.title} ${project.category} ${project.techStack.join(" ")}`}
+                    value={`${project.title} ${project.category || ""} ${(project.techStack || []).join(" ")}`}
                     onSelect={() => handleSelect(() => router.push(`/projects?highlight=${project.id}`))}
                     className="flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs text-[#e5e5e5] aria-selected:bg-[#38bdf8] aria-selected:text-[#000000]"
                   >
-                    <span>&gt; {project.title} [{project.category}]</span>
+                    <span>&gt; {project.title} [{project.category || "PROJECT"}]</span>
                     <span className="text-[10px]">[OPEN]</span>
                   </Command.Item>
                 ))}

@@ -12,17 +12,11 @@ import { ShareButton } from "@/components/blog/share-button";
 
 import { getSiteData } from "@/lib/store-server";
 
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  const { posts } = getSiteData();
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

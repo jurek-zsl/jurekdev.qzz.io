@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 import { getSiteData } from "@/lib/store-server";
 
+export const dynamic = "force-dynamic";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://jurekdev.qzz.io";
   const { posts } = getSiteData();

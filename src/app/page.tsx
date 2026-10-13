@@ -4,6 +4,8 @@ import { FeaturedProjects } from "@/components/home/featured-projects";
 import { LatestArticles } from "@/components/home/latest-articles";
 import { getSiteData } from "@/lib/store-server";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   const { posts, projects, profile, skills } = getSiteData();
 

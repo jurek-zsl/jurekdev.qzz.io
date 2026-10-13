@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+
 import { getSiteData } from "@/lib/store-server";
 
 export default function ProjectsPage() {

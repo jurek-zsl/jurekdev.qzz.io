@@ -24,7 +24,7 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="bg-[#38bdf8] text-[#000000] px-1 font-bold">
-                  {project.category.toUpperCase()}
+                  {(project.category || "project").toUpperCase()}
                 </span>
                 {project.stars && (
                   <span className="text-[#38bdf8]">STARS: {project.stars}</span>
@@ -69,7 +69,7 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
                 </div>
                 <p>{project.architecture.overview}</p>
 
-                {project.architecture.keyDecisions && (
+                {project.architecture.keyDecisions && Array.isArray(project.architecture.keyDecisions) && (
                   <div className="pt-2 border-t border-[#e5e5e5]/40 space-y-1">
                     <div className="text-[#38bdf8] font-bold">KEY DECISIONS:</div>
                     {project.architecture.keyDecisions.map((decision, idx) => (
@@ -89,7 +89,7 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
             )}
 
             {/* Highlights */}
-            {project.highlights && project.highlights.length > 0 && (
+            {project.highlights && Array.isArray(project.highlights) && project.highlights.length > 0 && (
               <div>
                 <div className="text-[#38bdf8] font-bold mb-1">
                   === HIGHLIGHTS &amp; CAPABILITIES ===
@@ -110,7 +110,7 @@ export function ProjectModal({ project, open, onOpenChange }: ProjectModalProps)
                 === TECHNOLOGIES USED ===
               </div>
               <div className="flex flex-wrap gap-1">
-                {project.techStack.map((tech) => (
+                {(project.techStack || []).map((tech) => (
                   <span key={tech} className="text-[#e5e5e5]">
                     [{tech}]
                   </span>
