@@ -1,0 +1,94 @@
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
+import { ToasterProvider } from "@/components/providers/toaster-provider";
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://jurekdev.qzz.io"),
+  title: {
+    default: "Jurek · Distributed Systems & Engineering",
+    template: "%s | Jurek",
+  },
+  description:
+    "Personal engineering portfolio and technical blog of Jurek. Designing distributed Raft storage, Linux kernel I/O engines, and tactile modern web applications.",
+  keywords: [
+    "Jurek",
+    "Distributed Systems",
+    "Go",
+    "Golang",
+    "Raft Consensus",
+    "Linux",
+    "io_uring",
+    "Next.js 15",
+    "TypeScript",
+    "Portfolio",
+    "Software Engineer",
+  ],
+  authors: [{ name: "Jurek", url: "https://github.com/jurek-zsl" }],
+  creator: "Jurek",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://jurekdev.qzz.io",
+    title: "Jurek · Distributed Systems & Modern Web Craft",
+    description:
+      "Personal engineering portfolio and technical blog of Jurek. Designing distributed Raft storage, Linux kernel I/O engines, and tactile modern web applications.",
+    siteName: "jurekdev.qzz.io",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Jurek · Distributed Systems & Modern Web Craft",
+    description:
+      "Personal engineering portfolio and technical blog of Jurek. Designing distributed Raft storage, Linux kernel I/O engines, and tactile modern web applications.",
+  },
+  alternates: {
+    canonical: "https://jurekdev.qzz.io",
+    types: {
+      "application/rss+xml": "https://jurekdev.qzz.io/feed.xml",
+    },
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html
+      lang="en"
+      className={`${geistMono.variable} h-full dark`}
+    >
+      <body className="min-h-full flex flex-col bg-[#000000] text-[#e5e5e5] font-mono antialiased relative">
+        <SmoothScrollProvider>
+          <Navbar />
+          <main className="flex-1 mx-auto max-w-5xl px-3 sm:px-6 w-full">
+            {children}
+          </main>
+          <Footer />
+          <ToasterProvider />
+        </SmoothScrollProvider>
+      </body>
+    </html>
+  );
+}

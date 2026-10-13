@@ -1,0 +1,65 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-term-bg: #000000;
+  --color-term-fg: #e5e5e5;
+  --color-term-accent: #38bdf8;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+:root {
+  --background: #000000;
+  --foreground: #e5e5e5;
+  --accent: #38bdf8;
+}
+
+* {
+  box-sizing: border-box;
+  text-rendering: geometricPrecision;
+}
+
+html {
+  color-scheme: dark;
+  background-color: #000000;
+  color: #e5e5e5;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body {
+  background-color: #000000;
+  color: #e5e5e5;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: #38bdf8;
+  color: #000000;
+}
+
+/* Custom terminal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+}
+
+pre, code, kbd {
+  font-family: var(--font-geist-mono), ui-monospace, monospace !important;
+}
+
+/* TUI Box border helper */
+.tui-border {
+  border: 1px solid #e5e5e5;
+}
+
+.tui-border-green {
+  border: 1px solid #38bdf8;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Jurek",
+  "handle": "jurek-zsl",
+  "domain": "jurekdev.qzz.io",
+  "status": "Available for distributed systems engineering & modern web craft",
+  "focus": [
+    "Raft Consensus",
+    "Zero-Copy Networking",
+    "Linux io_uring & eBPF",
+    "Offscreen WebGL",
+    "Next.js 15 & Motion"
+  ],
+  "location": "Warsaw / Remote",
+  "github": "https://github.com/jurek-zsl",
+  "email": "jurek@jurekdev.qzz.io"
+}
