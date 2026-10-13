@@ -90,9 +90,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
               try {
-                var saved = localStorage.getItem("theme_accent");
-                if (saved) {
-                  document.documentElement.style.setProperty("--accent", saved);
+                var savedAccent = localStorage.getItem("theme_accent");
+                if (savedAccent) {
+                  document.documentElement.style.setProperty("--accent", savedAccent);
+                }
+                var savedMode = localStorage.getItem("theme_mode");
+                if (savedMode === "light") {
+                  document.documentElement.classList.remove("dark");
+                  document.documentElement.classList.add("light");
+                } else {
+                  document.documentElement.classList.add("dark");
+                  document.documentElement.classList.remove("light");
                 }
               } catch(e) {}
             })();`,

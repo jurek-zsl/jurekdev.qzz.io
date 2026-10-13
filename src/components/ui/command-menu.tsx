@@ -7,6 +7,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
 import { PROJECTS } from "@/data/projects";
 import { POSTS } from "@/data/posts";
+import { toggleThemeWithAnimation } from "@/lib/theme-mode";
 
 interface CommandMenuProps {
   open: boolean;
@@ -169,6 +170,26 @@ export function CommandMenu({ open, onOpenChange, onOpenContact }: CommandMenuPr
                   ))}
                 </Command.Group>
               )}
+
+              {/* Theme Mode Actions */}
+              <Command.Group
+                heading="=== THEME MODE ==="
+                className="mt-2 px-2 py-1 text-[11px] font-bold text-[#38bdf8]"
+              >
+                <Command.Item
+                  value="toggle theme mode dark light"
+                  onSelect={() =>
+                    handleSelect(() => {
+                      const next = toggleThemeWithAnimation();
+                      toast.success(`THEME: ${next.toUpperCase()} MODE ACTIVE`);
+                    })
+                  }
+                  className="flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs text-[#e5e5e5] aria-selected:bg-[#38bdf8] aria-selected:text-[#000000]"
+                >
+                  <span>&gt; TOGGLE_THEME [DARK / LIGHT]</span>
+                  <span>[TOGGLE ◐]</span>
+                </Command.Item>
+              </Command.Group>
 
               {/* Actions */}
               <Command.Group

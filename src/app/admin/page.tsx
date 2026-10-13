@@ -14,6 +14,7 @@ import {
   isValidHexColor,
   applyAccentColor,
   getSavedAccentColor,
+  switchThemeWithAnimation,
 } from "@/lib/theme";
 
 type AdminTab = "posts" | "projects" | "skills" | "profile" | "theme" | "raw_json";
@@ -102,14 +103,18 @@ export default function AdminPage() {
     }
   };
 
-  const handleSelectAccent = (hex: string, autoSave: boolean = false) => {
+  const handleSelectAccent = (
+    hex: string,
+    autoSave: boolean = false,
+    event?: React.MouseEvent | { clientX: number; clientY: number }
+  ) => {
     if (!isValidHexColor(hex)) {
       toast.error("Invalid HEX color format (must be #RGB or #RRGGBB)");
       return;
     }
     const cleanHex = hex.trim();
     setAccentColorInput(cleanHex);
-    applyAccentColor(cleanHex);
+    switchThemeWithAnimation(cleanHex, event);
     const updatedProfile = { ...profile, accentColor: cleanHex };
     setProfile(updatedProfile);
     if (autoSave) {

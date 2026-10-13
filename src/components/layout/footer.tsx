@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { DigitalPlatBadge } from "@/components/ui/digitalplat-badge";
+import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 
 export function Footer() {
   const [currentTime, setCurrentTime] = useState<string>("");
@@ -91,6 +92,7 @@ export function Footer() {
             <Link href="/admin" className="text-[#38bdf8] hover:underline font-bold">
               [ADMIN]
             </Link>
+            <ThemeSwitcher />
           </div>
         </div>
 

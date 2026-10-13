@@ -98,3 +98,108 @@ export function getSavedAccentColor(): string | null {
     return null;
   }
 }
+
+/**
+ * Spawns an expanding phosphor laser ring effect at coordinates (x, y).
+ */
+function spawnPhosphorLaserRing(x: number, y: number, hex: string) {
+  if (typeof document === "undefined") return;
+  const ring = document.createElement("div");
+  ring.className = "terminal-theme-ripple";
+  ring.style.left = `${x}px`;
+  ring.style.top = `${y}px`;
+  ring.style.borderColor = hex;
+  document.body.appendChild(ring);
+  setTimeout(() => {
+    ring.remove();
+  }, 700);
+}
+
+/**
+ * Switches theme with a circular reveal animation expanding outward from the user's cursor / touch point.
+ */
+export function switchThemeWithAnimation(
+  newHex: string,
+  event?: React.MouseEvent | { clientX: number; clientY: number }
+) {
+  if (typeof window === "undefined") return;
+
+  const validHex = newHex.trim();
+  if (!isValidHexColor(validHex)) return;
+
+  // Resolve click coordinates (fallback to viewport center if invoked via keyboard)
+  let x = window.innerWidth / 2;
+  let y = window.innerHeight / 2;
+
+  if (event && typeof event.clientX === "number" && typeof event.clientY === "number") {
+    if (
+      event.clientX === 0 &&
+      event.clientY === 0 &&
+      "currentTarget" in event &&
+      (event.currentTarget as HTMLElement)?.getBoundingClientRect
+    ) {
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      x = rect.left + rect.width / 2;
+      y = rect.top + rect.height / 2;
+    } else if (event.clientX !== 0 || event.clientY !== 0) {
+      x = event.clientX;
+      y = event.clientY;
+    }
+  }
+
+  // Spawn visual phosphor pulse ring
+  spawnPhosphorLaserRing(x, y, validHex);
+
+  // If browser supports View Transitions API and motion is not reduced
+  const doc = document as any;
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (doc.startViewTransition && !prefersReducedMotion) {
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const transition = doc.startViewTransition(() => {
+      applyAccentColor(validHex);
+    });
+
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        [
+          {
+            clipPath: `circle(0px at ${x}px ${y}px)`,
+            filter: "brightness(1.3) contrast(1.05)",
+          },
+          {
+            clipPath: `circle(${endRadius}px at ${x}px ${y}px)`,
+            filter: "brightness(1) contrast(1)",
+          },
+        ],
+        {
+          duration: 480,
+          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+    });
+  } else {
+    applyAccentColor(validHex);
+  }
+}
+
+/**
+ * Cycles to the next preset color in order with the expanding reveal animation.
+ */
+export function cycleNextAccent(
+  currentHex: string,
+  event?: React.MouseEvent | { clientX: number; clientY: number }
+): string {
+  const currentIndex = ACCENT_PRESETS.findIndex(
+    (p) => p.hex.toLowerCase() === currentHex.toLowerCase()
+  );
+  const nextIndex = (currentIndex + 1) % ACCENT_PRESETS.length;
+  const nextPreset = ACCENT_PRESETS[nextIndex];
+  switchThemeWithAnimation(nextPreset.hex, event);
+  return nextPreset.hex;
+}

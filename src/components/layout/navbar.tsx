@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { CommandMenu } from "../ui/command-menu";
 import { ContactModal } from "../ui/contact-modal";
+import { ThemeSwitcher } from "../ui/theme-switcher";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -65,9 +66,11 @@ export function Navbar() {
 
           {/* Right Action Utilities */}
           <div className="flex items-center gap-2">
+            <ThemeSwitcher />
+
             <button
               onClick={() => setCommandOpen(true)}
-              className="border border-[#e5e5e5] bg-[#000000] px-2.5 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+              className="border border-[#e5e5e5] bg-[#000000] px-2.5 py-1 text-xs text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer hidden sm:inline-block"
             >
               [SEARCH: ^K]
             </button>
@@ -108,6 +111,10 @@ export function Navbar() {
                   &gt; {link.label}
                 </Link>
               ))}
+              <div className="pt-2 border-t border-[#e5e5e5]/40 flex items-center justify-between">
+                <span className="text-[11px] text-[#e5e5e5]/70">APPEARANCE:</span>
+                <ThemeSwitcher />
+              </div>
             </div>
           </div>
         )}

@@ -67,6 +67,108 @@ pre, code, kbd {
 }
 
 /* ========================================================
+   LIGHT MODE CONTRAST OVERRIDES (TUI PAPER MONOSPACE)
+   ======================================================== */
+html.light {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+html.light body {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+html.light header {
+  background-color: #ffffff !important;
+  border-color: #111827 !important;
+}
+
+html.light footer {
+  background-color: #ffffff !important;
+  border-color: #111827 !important;
+}
+
+html.light .bg-\[\#000000\] {
+  background-color: #ffffff !important;
+}
+
+html.light .text-\[\#e5e5e5\] {
+  color: #111827 !important;
+}
+
+html.light .border-\[\#e5e5e5\] {
+  border-color: #111827 !important;
+}
+
+html.light .divide-\[\#e5e5e5\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #111827 !important;
+}
+
+html.light .border-\[\#e5e5e5\]\/40 {
+  border-color: rgba(17, 24, 39, 0.25) !important;
+}
+
+html.light .border-\[\#e5e5e5\]\/30 {
+  border-color: rgba(17, 24, 39, 0.2) !important;
+}
+
+html.light .hover\:border-\[\#e5e5e5\]:hover {
+  border-color: #111827 !important;
+}
+
+html.light .hover\:text-\[\#e5e5e5\]:hover {
+  color: #111827 !important;
+}
+
+html.light .hover\:bg-\[\#e5e5e5\]:hover {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+}
+
+html.light .hover\:bg-\[\#000000\]:hover {
+  background-color: #ffffff !important;
+}
+
+html.light .hover\:text-\[\#000000\]:hover {
+  color: #ffffff !important;
+}
+
+html.light .tui-border {
+  border-color: #111827 !important;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+html.light .text-\[\#e5e5e5\]\/60,
+html.light .text-\[\#e5e5e5\]\/70,
+html.light .text-\[\#e5e5e5\]\/80 {
+  color: rgba(17, 24, 39, 0.75) !important;
+}
+
+html.light .placeholder\:text-\[\#e5e5e5\]\/50::placeholder {
+  color: rgba(17, 24, 39, 0.4) !important;
+}
+
+html.light .bg-\[\#38bdf8\] {
+  background-color: var(--accent) !important;
+  color: #000000 !important;
+}
+
+html.light .hover\:bg-\[\#38bdf8\]:hover {
+  background-color: var(--accent) !important;
+  color: #000000 !important;
+}
+
+html.light [aria-selected="true"].aria-selected\:bg-\[\#38bdf8\] {
+  background-color: var(--accent) !important;
+  color: #000000 !important;
+}
+
+/* ========================================================
    DYNAMIC ACCENT COLOR BINDINGS FOR ALL TAILWIND UTILITIES
    ======================================================== */
 .text-\[\#38bdf8\] {
@@ -126,3 +228,48 @@ pre, code, kbd {
 [aria-selected="true"] .aria-selected\:text-\[\#38bdf8\] {
   color: var(--accent) !important;
 }
+
+/* ========================================================
+   VIEW TRANSITIONS & THEME SWITCHING PHOSPHOR SCANLINE
+   ======================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Phosphor beam ripple ring expanding outward on theme click */
+.terminal-theme-ripple {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  border-radius: 9999px;
+  border-width: 2px;
+  border-style: solid;
+  transform: translate(-50%, -50%);
+  animation: theme-ripple-expand 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes theme-ripple-expand {
+  0% {
+    width: 0px;
+    height: 0px;
+    opacity: 1;
+    box-shadow: 0 0 24px var(--accent, #38bdf8), inset 0 0 12px var(--accent, #38bdf8);
+  }
+  100% {
+    width: 280vmax;
+    height: 280vmax;
+    opacity: 0;
+    box-shadow: 0 0 50px var(--accent, #38bdf8), inset 0 0 25px var(--accent, #38bdf8);
+  }
+}
+
