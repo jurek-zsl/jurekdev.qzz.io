@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { SpotlightButton } from "../ui/spotlight-button";
+import { ProfileData, DEFAULT_PROFILE } from "@/lib/store";
+import { AsciiBanner, WindMode } from "./ascii-banner";
 
 const stripNewlines = (str: string) => str.replace(/^\n+|\n+$/g, "");
 
@@ -43,8 +45,6 @@ const BANNERS = {
 const BANNER_KEYS = ["slant", "subzero", "graffiti", "starwars"] as const;
 type BannerKey = typeof BANNER_KEYS[number];
 
-import { ProfileData, DEFAULT_PROFILE } from "@/lib/store";
-
 interface HeroProps {
   profile?: ProfileData;
 }
@@ -52,10 +52,17 @@ interface HeroProps {
 export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
   const [copied, setCopied] = useState(false);
   const [bannerStyle, setBannerStyle] = useState<BannerKey>("slant");
+  const [windMode, setWindMode] = useState<WindMode>("calm");
 
   const cycleBanner = () => {
     const nextIndex = (BANNER_KEYS.indexOf(bannerStyle) + 1) % BANNER_KEYS.length;
     setBannerStyle(BANNER_KEYS[nextIndex]);
+  };
+
+  const cycleWind = () => {
+    const modes: WindMode[] = ["calm", "gust", "still"];
+    const next = modes[(modes.indexOf(windMode) + 1) % modes.length];
+    setWindMode(next);
   };
 
   const handleCopyEmail = async () => {
@@ -76,19 +83,30 @@ export function Hero({ profile = DEFAULT_PROFILE }: HeroProps) {
       {/* ASCII Art Title Header */}
       <div className="flex items-center justify-between pb-1 text-xs">
         <span className="text-[10px] text-[#e5e5e5]/60 select-none">// HERO_IDENTITY_BANNER</span>
-        <button
-          onClick={cycleBanner}
-          className="text-[10px] border border-[#e5e5e5] px-1.5 py-0.5 text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
-          title="Cycle ASCII banner typography"
-        >
-          [FONT: {bannerStyle.toUpperCase()} ⟳]
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={cycleWind}
+            className="text-[10px] border border-[#e5e5e5] px-1.5 py-0.5 text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+            title="Toggle grass wind animation (calm breeze, brisk gust, or still)"
+          >
+            [WIND: {windMode === "calm" ? "CALM 🌾" : windMode === "gust" ? "GUST 🍃" : "STILL ⏸"}]
+          </button>
+          <button
+            onClick={cycleBanner}
+            className="text-[10px] border border-[#e5e5e5] px-1.5 py-0.5 text-[#e5e5e5] hover:border-[#38bdf8] hover:text-[#38bdf8] cursor-pointer"
+            title="Cycle ASCII banner typography"
+          >
+            [FONT: {bannerStyle.toUpperCase()} ⟳]
+          </button>
+        </div>
       </div>
 
-      {/* ASCII Art Title */}
-      <pre className="text-[#38bdf8] text-[10px] sm:text-xs md:text-sm leading-snug tracking-normal select-none overflow-x-auto py-2 font-mono">
-        {BANNERS[bannerStyle]}
-      </pre>
+      {/* ASCII Art Title with Grass-in-the-Wind Idle Animation */}
+      <AsciiBanner
+        banner={BANNERS[bannerStyle]}
+        windMode={windMode}
+        interactive={true}
+      />
 
       <div className="mt-4 border-b border-[#e5e5e5] pb-2 text-xs flex items-center justify-between">
         <span className="text-[#38bdf8]">SYS_ID: JUREK_ZSL // DOMAIN: {profile.host}</span>
