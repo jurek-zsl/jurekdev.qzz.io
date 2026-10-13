@@ -238,6 +238,36 @@ html.light .placeholder\:text-\[\#e5e5e5\]\/50::placeholder {
   border-color: var(--accent) !important;
 }
 
+/* ========================================================
+   CRITICAL: HOVER TEXT CONTRAST OVERRIDES
+   Ensures button text is always sharp and readable when hovered
+   ======================================================== */
+.hover\:text-\[\#000000\]:hover,
+button.hover\:text-\[\#000000\]:hover,
+a.hover\:text-\[\#000000\]:hover,
+.hover\:text-black:hover,
+button.hover\:text-black:hover,
+a.hover\:text-black:hover {
+  color: #000000 !important;
+}
+
+.hover\:text-\[\#e5e5e5\]:hover,
+button.hover\:text-\[\#e5e5e5\]:hover,
+a.hover\:text-\[\#e5e5e5\]:hover,
+.hover\:text-white:hover,
+button.hover\:text-white:hover,
+a.hover\:text-white:hover {
+  color: #e5e5e5 !important;
+}
+
+.group:hover .group-hover\:text-\[\#000000\] {
+  color: #000000 !important;
+}
+
+.hover\:text-\[var\(--accent\)\]:hover {
+  color: var(--accent) !important;
+}
+
 .focus\:border-\[\#38bdf8\]:focus {
   border-color: var(--accent) !important;
 }

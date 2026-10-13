@@ -77,7 +77,7 @@ export function Navbar() {
 
             <button
               onClick={() => setContactOpen(true)}
-              className="border border-[#38bdf8] bg-[#000000] px-2.5 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer"
+              className="border border-[#38bdf8] bg-[#000000] px-2.5 py-1 text-xs text-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#000000] cursor-pointer transition-colors duration-150 select-none font-bold"
             >
               [CONTACT]
             </button>
