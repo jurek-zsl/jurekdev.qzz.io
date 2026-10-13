@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import React, { useRef, useEffect, useMemo, useCallback } from "react";
 
 export type WindMode = "calm" | "gust" | "still";
 
@@ -19,18 +19,49 @@ interface CharNodeInfo {
   heightFrac: number;
 }
 
-// Glyph morphing dictionaries when wind bends symbols
-const MORPH_RIGHT: Record<string, string> = {
-  "|": "/",
-  "_": "~",
-  "-": "~",
-};
+/**
+ * Pure ASCII glyph wave morphing.
+ * Morphs directional characters with the wind phase:
+ *  - Vertical grass stems: | <-> / <-> \
+ *  - Slanted stalks: / <-> |, \ <-> |
+ *  - Grass tops / flat bars: _ <-> ~, - <-> ~, = <-> ~
+ * Ground/bottom row stays 100% anchored so the baseline is solid and readable.
+ * Absolutely zero CSS transforms, rotation, or geometric curvature.
+ */
+function getMorphedChar(origChar: string, heightFrac: number, eff: number): string {
+  // Ground row and lower stalks stay anchored for baseline stability
+  if (heightFrac < 0.25) return origChar;
 
-const MORPH_LEFT: Record<string, string> = {
-  "|": "\\",
-  "_": "-",
-  "~": "-",
-};
+  const totalEff = heightFrac * eff;
+
+  if (origChar === "|") {
+    if (totalEff > 0.35) return "/";
+    if (totalEff < -0.35) return "\\";
+    return "|";
+  }
+  if (origChar === "/") {
+    if (totalEff < -0.45) return "|";
+    return "/";
+  }
+  if (origChar === "\\") {
+    if (totalEff > 0.45) return "|";
+    return "\\";
+  }
+  if (origChar === "_") {
+    if (totalEff > 0.38) return "~";
+    return "_";
+  }
+  if (origChar === "-") {
+    if (totalEff > 0.35) return "~";
+    if (totalEff < -0.35) return "_";
+    return "-";
+  }
+  if (origChar === "=") {
+    if (totalEff > 0.4) return "~";
+    return "=";
+  }
+  return origChar;
+}
 
 export function AsciiBanner({
   banner,
@@ -75,7 +106,7 @@ export function AsciiBanner({
     hoverColRef.current = null;
   }, []);
 
-  // Real ASCII character-level physics loop
+  // Pure ASCII character animation loop (zero CSS transforms / zero curvature)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -84,17 +115,18 @@ export function AsciiBanner({
     ).matches;
 
     if (windMode === "still" || prefersReducedMotion) {
-      // Reset all characters to still resting positions
+      // Reset all characters to still resting symbols
       for (const node of charNodesRef.current) {
-        node.el.style.transform = "none";
-        node.el.textContent = node.origChar;
+        if (node.el.textContent !== node.origChar) {
+          node.el.textContent = node.origChar;
+        }
       }
       return;
     }
 
-    let startTime = performance.now();
-    const speedMult = windMode === "gust" ? 1.45 : 0.95;
-    const ampMult = windMode === "gust" ? 1.4 : 1.0;
+    const startTime = performance.now();
+    const speedMult = windMode === "gust" ? 1.4 : 0.85;
+    const ampMult = windMode === "gust" ? 1.35 : 1.0;
 
     const tick = (now: number) => {
       const elapsed = ((now - startTime) / 1000) * speedMult;
@@ -102,54 +134,33 @@ export function AsciiBanner({
 
       for (let i = 0; i < charNodesRef.current.length; i++) {
         const node = charNodesRef.current[i];
-        const h = node.heightFrac;
 
-        // Primary rolling breeze swell (long wavelength ~32 cols)
-        const phase1 = elapsed * 1.8 - node.c * 0.082;
+        // Primary rolling breeze swell (long wavelength ~55 cols)
+        const phase1 = elapsed * 1.25 - node.c * 0.1;
         const wave1 = Math.sin(phase1);
 
-        // Secondary harmonic breeze (~55 cols)
-        const phase2 = elapsed * 0.95 - node.c * 0.042;
+        // Secondary subtle harmonic breeze
+        const phase2 = elapsed * 0.65 - node.c * 0.05 + 1.2;
         const wave2 = Math.sin(phase2);
 
-        // Combined horizontal wind sway (tip deflects most, ground is anchored)
-        let dx = h * (wave1 * 3.4 + wave2 * 1.5) * ampMult;
+        // Combined wind force
+        let eff = ((wave1 * 0.8 + wave2 * 0.35) / 1.15) * ampMult;
 
-        // Organic Pythagorean stem arc: tips dip slightly downward as they lean
-        let dy = h * (Math.abs(wave1) * 0.75 + Math.abs(wave2) * 0.3) * ampMult;
-
-        // Subtle individual character micro-rotation
-        let rot = h * (wave1 * 2.2 + wave2 * 0.8) * ampMult;
-
-        // Interactive "hand brushing through grass" parting deflection
+        // Interactive "hand brushing through grass" deflection
         if (hoverCol !== null && interactive) {
           const dist = node.c - hoverCol;
-          const radius = 7;
-          if (Math.abs(dist) <= radius) {
+          const radius = 6;
+          if (Math.abs(dist) <= radius && dist !== 0) {
             const factor = Math.cos((Math.abs(dist) / radius) * (Math.PI / 2));
-            const dir = dist === 0 ? 0.3 : Math.sign(dist);
-            dx += h * dir * factor * 4.2;
-            dy += h * factor * 1.2;
-            rot += h * dir * factor * 3.0;
+            const dir = Math.sign(dist);
+            eff += dir * factor * 0.9;
           }
         }
 
-        // Apply hardware-accelerated transform to the individual ASCII character
-        node.el.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(
-          2
-        )}px, 0) rotate(${rot.toFixed(1)}deg)`;
-
-        // Real ASCII glyph morphing: symbols flutter and lean with the wind crest
-        if (h > 0.35 && Math.abs(wave1) > 0.82) {
-          if (wave1 > 0 && MORPH_RIGHT[node.origChar]) {
-            node.el.textContent = MORPH_RIGHT[node.origChar];
-          } else if (wave1 < 0 && MORPH_LEFT[node.origChar]) {
-            node.el.textContent = MORPH_LEFT[node.origChar];
-          } else {
-            node.el.textContent = node.origChar;
-          }
-        } else if (node.el.textContent !== node.origChar) {
-          node.el.textContent = node.origChar;
+        // Pure ASCII symbol update (no DOM element transform/curvature)
+        const nextChar = getMorphedChar(node.origChar, node.heightFrac, eff);
+        if (node.el.textContent !== nextChar) {
+          node.el.textContent = nextChar;
         }
       }
 
@@ -165,7 +176,7 @@ export function AsciiBanner({
     };
   }, [windMode, interactive, lines]);
 
-  // Callback to register character DOM elements into the physics array
+  // Callback to register character DOM elements
   const registerChar = useCallback(
     (el: HTMLSpanElement | null, r: number, c: number, ch: string) => {
       if (!el) return;
@@ -211,7 +222,7 @@ export function AsciiBanner({
                 <span
                   key={c}
                   ref={(el) => registerChar(el, r, c, ch)}
-                  className="inline-block whitespace-pre select-none origin-bottom will-change-transform"
+                  className="inline-block whitespace-pre select-none"
                   style={{ width: "1ch" }}
                 >
                   {ch}
